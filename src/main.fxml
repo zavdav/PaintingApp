@@ -52,7 +52,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@../images/brush.png" />
+                                    <Image url="@resources/images/brush.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -61,7 +61,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@../images/eraser.png" />
+                                    <Image url="@resources/images/eraser.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -70,7 +70,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@../images/eyedropper.png" />
+                                    <Image url="@resources/images/eyedropper.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -172,7 +172,10 @@
                   </HBox>
                   <HBox prefHeight="100.0" prefWidth="217.0">
                      <children>
-                        <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
+                        <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@resources/images/brush.png" />
+                           </image></ImageView>
                      </children>
                   </HBox>
                </children>
