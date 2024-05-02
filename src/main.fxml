@@ -17,7 +17,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Main">
+<AnchorPane prefHeight="480.0" prefWidth="854.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Main">
    <children>
       <MenuBar fx:id="menuBar" layoutY="1.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="26.0" prefWidth="854.0">
         <menus>
@@ -41,12 +41,11 @@
           </Menu>
         </menus>
       </MenuBar>
-      <Canvas height="347.0" layoutY="133.0" width="854.0" />
       <HBox fx:id="mainBox" layoutY="27.0" prefHeight="100.0" prefWidth="854.0">
          <children>
             <HBox fx:id="toolBox" prefHeight="100.0" prefWidth="427.0" style="-fx-border-color: black; -fx-border-width: 0.5;">
                <children>
-                  <ToolBar prefHeight="50.0" prefWidth="427.0">
+                  <ToolBar fx:id="toolBar" prefHeight="50.0" prefWidth="427.0">
                     <items>
                       <Button mnemonicParsing="false">
                            <graphic>
@@ -81,7 +80,7 @@
             </HBox>
             <HBox fx:id="colorBox" prefHeight="100.0" prefWidth="427.0" style="-fx-border-color: black; -fx-border-width: 0.5;">
                <children>
-                  <HBox prefHeight="100.0" prefWidth="210.0">
+                  <HBox fx:id="RGBControls" prefHeight="100.0" prefWidth="210.0">
                      <children>
                         <VBox prefHeight="100.0" prefWidth="427.0">
                            <children>
@@ -170,13 +169,18 @@
                         </VBox>
                      </children>
                   </HBox>
-                  <HBox prefHeight="100.0" prefWidth="217.0">
+                  <HBox fx:id="colorDisplay" prefHeight="100.0" prefWidth="217.0">
                      <children>
                         <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
                      </children>
                   </HBox>
                </children>
             </HBox>
+         </children>
+      </HBox>
+      <HBox fx:id="canvasBox" alignment="CENTER" layoutY="133.0" prefHeight="347.0" prefWidth="854.0">
+         <children>
+            <Canvas fx:id="canvas" height="300.0" width="600.0" />
          </children>
       </HBox>
    </children>
