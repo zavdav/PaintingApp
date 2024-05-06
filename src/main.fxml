@@ -117,22 +117,22 @@
                                     </VBox>
                                     <VBox prefHeight="200.0" prefWidth="100.0">
                                        <children>
-                                          <Slider majorTickUnit="255.0" max="255.0" minorTickCount="255">
+                                          <Slider fx:id="redSlider" blockIncrement="1.0" majorTickUnit="1.0" max="255.0" minorTickCount="0">
                                              <VBox.margin>
                                                 <Insets bottom="7.0" top="3.0" />
                                              </VBox.margin>
                                           </Slider>
-                                          <Slider>
+                                          <Slider fx:id="greenSlider" blockIncrement="1.0" majorTickUnit="1.0" max="255.0" minorTickCount="0">
                                              <VBox.margin>
                                                 <Insets bottom="7.0" />
                                              </VBox.margin>
                                           </Slider>
-                                          <Slider />
+                                          <Slider fx:id="blueSlider" blockIncrement="1.0" majorTickUnit="1.0" max="255.0" minorTickCount="0" />
                                        </children>
                                     </VBox>
                                     <VBox prefHeight="30.0" prefWidth="60.0">
                                        <children>
-                                          <TextField alignment="CENTER_RIGHT" promptText="0..255">
+                                          <TextField fx:id="txtRed" alignment="CENTER_RIGHT" promptText="0..255">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
@@ -140,17 +140,17 @@
                                                 <Insets />
                                              </VBox.margin>
                                           </TextField>
-                                          <TextField alignment="CENTER_RIGHT" promptText="0..255">
+                                          <TextField fx:id="txtGreen" alignment="CENTER_RIGHT" promptText="0..255">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
                                           </TextField>
-                                          <TextField alignment="CENTER_RIGHT" promptText="0..255">
+                                          <TextField fx:id="txtBlue" alignment="CENTER_RIGHT" promptText="0..255">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
                                           </TextField>
-                                          <TextField alignment="CENTER_RIGHT" promptText="#000000">
+                                          <TextField fx:id="txtHex" alignment="CENTER_RIGHT" promptText="#000000">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
