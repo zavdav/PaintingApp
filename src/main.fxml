@@ -2,13 +2,13 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.canvas.Canvas?>
-<?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
@@ -47,7 +47,7 @@
                <children>
                   <ToolBar fx:id="toolBar" prefHeight="50.0" prefWidth="427.0">
                     <items>
-                      <Button mnemonicParsing="false">
+                        <ToggleButton fx:id="brush" mnemonicParsing="false">
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
@@ -55,8 +55,8 @@
                                  </image>
                               </ImageView>
                            </graphic>
-                        </Button>
-                        <Button mnemonicParsing="false">
+                        </ToggleButton>
+                        <ToggleButton fx:id="eraser" mnemonicParsing="false">
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
@@ -64,8 +64,8 @@
                                  </image>
                               </ImageView>
                            </graphic>
-                        </Button>
-                        <Button mnemonicParsing="false">
+                        </ToggleButton>
+                        <ToggleButton fx:id="eyedropper" mnemonicParsing="false">
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
@@ -73,7 +73,7 @@
                                  </image>
                               </ImageView>
                            </graphic>
-                        </Button>
+                        </ToggleButton>
                     </items>
                   </ToolBar>
                </children>
@@ -132,7 +132,7 @@
                                     </VBox>
                                     <VBox prefHeight="30.0" prefWidth="60.0">
                                        <children>
-                                          <TextField fx:id="txtRed" alignment="CENTER_RIGHT" promptText="0..255">
+                                          <TextField fx:id="txtRed" alignment="CENTER_RIGHT">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
@@ -140,17 +140,17 @@
                                                 <Insets />
                                              </VBox.margin>
                                           </TextField>
-                                          <TextField fx:id="txtGreen" alignment="CENTER_RIGHT" promptText="0..255">
+                                          <TextField fx:id="txtGreen" alignment="CENTER_RIGHT">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
                                           </TextField>
-                                          <TextField fx:id="txtBlue" alignment="CENTER_RIGHT" promptText="0..255">
+                                          <TextField fx:id="txtBlue" alignment="CENTER_RIGHT">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>
                                           </TextField>
-                                          <TextField fx:id="txtHex" alignment="CENTER_RIGHT" promptText="#000000">
+                                          <TextField fx:id="txtHex" alignment="CENTER_RIGHT" text="000000">
                                              <font>
                                                 <Font size="10.0" />
                                              </font>

@@ -6,6 +6,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.*;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -16,37 +18,43 @@ import java.util.regex.Pattern;
 public class Main extends Application {
     // Definition of FXML elements to use in Java code
     @FXML
-    MenuBar menuBar;
+    private MenuBar menuBar;
     @FXML
-    public HBox mainBox;
+    private HBox mainBox;
     @FXML
-    public HBox toolBox;
+    private HBox toolBox;
     @FXML
-    public ToolBar toolBar;
+    private ToolBar toolBar;
     @FXML
-    public HBox colorBox;
+    private ToggleButton brush;
     @FXML
-    public HBox RGBControls;
+    private ToggleButton eraser;
     @FXML
-    public Slider redSlider;
+    private ToggleButton eyedropper;
     @FXML
-    public Slider greenSlider;
+    private HBox colorBox;
     @FXML
-    public Slider blueSlider;
+    private HBox RGBControls;
     @FXML
-    public TextField txtRed;
+    private Slider redSlider;
     @FXML
-    public TextField txtGreen;
+    private Slider greenSlider;
     @FXML
-    public TextField txtBlue;
+    private Slider blueSlider;
     @FXML
-    public TextField txtHex;
+    private TextField txtRed;
     @FXML
-    public HBox colorDisplay;
+    private TextField txtGreen;
     @FXML
-    public HBox canvasBox;
+    private TextField txtBlue;
     @FXML
-    public Canvas canvas;
+    private TextField txtHex;
+    @FXML
+    private HBox colorDisplay;
+    @FXML
+    private HBox canvasBox;
+    @FXML
+    private Canvas canvas;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -58,6 +66,9 @@ public class Main extends Application {
         mainBox = (HBox) loader.getNamespace().get("mainBox");
         toolBox = (HBox) loader.getNamespace().get("toolBox");
         toolBar = (ToolBar) loader.getNamespace().get("toolBar");
+        brush = (ToggleButton) loader.getNamespace().get("brush");
+        eraser = (ToggleButton) loader.getNamespace().get("eraser");
+        eyedropper = (ToggleButton) loader.getNamespace().get("eyedropper");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
         canvasBox = (HBox) loader.getNamespace().get("canvasBox");
         RGBControls = (HBox) loader.getNamespace().get("RGBControls");
@@ -74,11 +85,25 @@ public class Main extends Application {
         txtGreen.setTextFormatter(colorChannelFormatter());
         txtBlue.setTextFormatter(colorChannelFormatter());
         txtHex.setTextFormatter(hexFormatter());
-        txtHex.setText("000000");
-        // Brush functionality
+        // Brush + eraser functionality
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        canvas.setOnMouseDragged(event -> gc.fillOval(event.getX(),event.getY(), 10, 10));
-        // Color selection
+        ToggleGroup toggleGroup = new ToggleGroup();
+        brush.setToggleGroup(toggleGroup);
+        eraser.setToggleGroup(toggleGroup);
+        eyedropper.setToggleGroup(toggleGroup);
+        addSelectionEventFilter(brush);
+        addSelectionEventFilter(eraser);
+        addSelectionEventFilter(eyedropper);
+        toggleGroup.selectToggle(brush);
+        canvas.setOnMouseDragged(event -> {
+            if(brush.isSelected()){
+                gc.fillOval(event.getX(), event.getY(), 10, 10);
+            }
+            else if(eraser.isSelected()){
+                gc.clearRect(event.getX(), event.getY(), 10, 10);
+            }
+        });
+        // Color selection + binding of Sliders and TextBoxes
         txtHex.textProperty().addListener((observable, oldValue, newValue) -> {
             if(!oldValue.equals(newValue)&& newValue.length() == 6){
                 gc.setFill(Color.web("#"+txtHex.getText()));
@@ -118,8 +143,11 @@ public class Main extends Application {
         canvasBox.prefWidthProperty().bind(primaryStage.widthProperty());
         canvasBox.prefHeightProperty().bind(primaryStage.heightProperty().subtract(menuBar.prefHeightProperty()).subtract(mainBox.prefHeightProperty()));
         colorDisplay.prefWidthProperty().bind(colorBox.prefWidthProperty().subtract(RGBControls.prefWidthProperty()));
+        primaryStage.getIcons().add(new Image("resources/images/icon.png"));
+        primaryStage.setTitle("PaintingApp");
         primaryStage.show();
     }
+    // Custom TextFormatters, in order to limit input into TextBoxes
     public TextFormatter<String> hexFormatter(){
         Pattern hexPattern = Pattern.compile("[0-9a-fA-F]*");
         UnaryOperator<TextFormatter.Change> filter = change -> {
@@ -143,6 +171,14 @@ public class Main extends Application {
             }
         };
         return new TextFormatter<>(filter);
+    }
+    // Prevent the currently selected ToggleButton from being deselected
+    public void addSelectionEventFilter(ToggleButton toggleButton){
+        toggleButton.addEventFilter(MouseEvent.MOUSE_RELEASED, event -> {
+            if(toggleButton.isSelected()){
+                event.consume();
+            }
+        });
     }
 
     public static void main(String[] args) {
