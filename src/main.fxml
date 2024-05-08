@@ -14,6 +14,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
@@ -169,9 +170,9 @@
                         </VBox>
                      </children>
                   </HBox>
-                  <HBox fx:id="colorDisplay" prefHeight="100.0" prefWidth="217.0">
+                  <HBox fx:id="colorDisplay" alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="217.0">
                      <children>
-                        <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true" />
+                        <Pane fx:id="colorView" maxHeight="70.0" maxWidth="70.0" prefHeight="70.0" prefWidth="70.0" />
                      </children>
                   </HBox>
                </children>

@@ -2,6 +2,8 @@ import javafx.beans.binding.*;
 import javafx.application.Application;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Cursor;
+import javafx.scene.ImageCursor;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.*;
@@ -9,7 +11,9 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
 import java.util.function.UnaryOperator;
@@ -52,15 +56,22 @@ public class Main extends Application {
     @FXML
     private HBox colorDisplay;
     @FXML
+    private Pane colorView;
+    @FXML
     private HBox canvasBox;
     @FXML
     private Canvas canvas;
+    // Cursor of the currently selected tool
+    private ImageCursor currentCursor;
+    // Current paint color
+    private Paint currentPaint;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("main.fxml"));
         Parent root = loader.load();
-        primaryStage.setScene(new Scene(root));
+        Scene scene = new Scene(root);
+        primaryStage.setScene(scene);
         // Injection of FXML elements
         menuBar = (MenuBar) loader.getNamespace().get("menuBar");
         mainBox = (HBox) loader.getNamespace().get("mainBox");
@@ -80,6 +91,7 @@ public class Main extends Application {
         txtBlue =  (TextField) loader.getNamespace().get("txtBlue");
         txtHex = (TextField) loader.getNamespace().get("txtHex");
         colorDisplay = (HBox) loader.getNamespace().get("colorDisplay");
+        colorView = (Pane) loader.getNamespace().get("colorView");
         canvas = (Canvas) loader.getNamespace().get("canvas");
         txtRed.setTextFormatter(colorChannelFormatter());
         txtGreen.setTextFormatter(colorChannelFormatter());
@@ -87,6 +99,8 @@ public class Main extends Application {
         txtHex.setTextFormatter(hexFormatter());
         // Brush + eraser functionality
         GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.WHITE);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         ToggleGroup toggleGroup = new ToggleGroup();
         brush.setToggleGroup(toggleGroup);
         eraser.setToggleGroup(toggleGroup);
@@ -95,21 +109,64 @@ public class Main extends Application {
         addSelectionEventFilter(eraser);
         addSelectionEventFilter(eyedropper);
         toggleGroup.selectToggle(brush);
-        canvas.setOnMouseDragged(event -> {
-            if(brush.isSelected()){
-                gc.fillOval(event.getX(), event.getY(), 10, 10);
-            }
-            else if(eraser.isSelected()){
-                gc.clearRect(event.getX(), event.getY(), 10, 10);
+        brush.selectedProperty().set(true);
+        currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
+        brush.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue){
+                currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
             }
         });
+        eraser.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue){
+                currentCursor = new ImageCursor(new Image("resources/images/cursor_eraser.png"));
+            }
+        });
+        eyedropper.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue){
+                currentCursor = new ImageCursor(new Image("resources/images/cursor_eyedropper.png"));
+            }
+        });
+        canvasBox.setOnMouseExited(event -> scene.setCursor(Cursor.DEFAULT));
+        canvasBox.setOnMouseEntered(event -> scene.setCursor(currentCursor));
+        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
+                event -> {
+            if(brush.isSelected()){
+                gc.setLineWidth(1);
+                gc.setStroke(currentPaint);
+            }else if(eraser.isSelected()){
+                gc.setLineWidth(10);
+                gc.setStroke(Color.WHITE);
+            }
+                        gc.beginPath();
+                        gc.moveTo(event.getX(), event.getY());
+                        gc.stroke();
+                });
+
+        canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED,
+                event -> {
+                        gc.lineTo(event.getX(), event.getY());
+                        gc.stroke();
+                        gc.closePath();
+                        gc.beginPath();
+                        gc.moveTo(event.getX(), event.getY());
+                });
+
+        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED,
+                event -> {
+                        gc.lineTo(event.getX(), event.getY());
+                        gc.stroke();
+                        gc.closePath();
+                });
         // Color selection + binding of Sliders and TextBoxes
+        currentPaint = Color.web("#000000");
+        colorView.setStyle("-fx-background-color:#000000");
         txtHex.textProperty().addListener((observable, oldValue, newValue) -> {
             if(!oldValue.equals(newValue)&& newValue.length() == 6){
-                gc.setFill(Color.web("#"+txtHex.getText()));
+                currentPaint = Color.web("#"+txtHex.getText());
                 redSlider.setValue(Integer.parseInt(txtHex.getText(0,2),16));
                 greenSlider.setValue(Integer.parseInt(txtHex.getText(2,4),16));
                 blueSlider.setValue(Integer.parseInt(txtHex.getText(4,6),16));
+                colorView.setStyle("-fx-background-color:#"+txtHex.getText());
             }
         });
         redSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
