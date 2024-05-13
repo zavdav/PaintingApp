@@ -2,12 +2,15 @@ import javafx.beans.binding.*;
 import javafx.application.Application;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.*;
 import javafx.scene.Cursor;
-import javafx.scene.ImageCursor;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.canvas.*;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TextField;
+import javafx.scene.image.*;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
@@ -16,6 +19,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
+import java.util.ArrayList;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -23,6 +27,10 @@ public class Main extends Application {
     // Definition of FXML elements to use in Java code
     @FXML
     private MenuBar menuBar;
+    @FXML
+    private MenuItem undo;
+    @FXML
+    private MenuItem redo;
     @FXML
     private HBox mainBox;
     @FXML
@@ -65,6 +73,10 @@ public class Main extends Application {
     private ImageCursor currentCursor;
     // Current paint color
     private Paint currentPaint;
+    // ArrayList for canvas snapshots, required for undo/redo
+    private ArrayList<WritableImage> changeList;
+    // Index of the current WritableImage in the ArrayList
+    private int currentIdx;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -72,8 +84,12 @@ public class Main extends Application {
         Parent root = loader.load();
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
+        changeList = new ArrayList<>();
+        currentIdx = 0;
         // Injection of FXML elements
         menuBar = (MenuBar) loader.getNamespace().get("menuBar");
+        undo = (MenuItem) loader.getNamespace().get("undo");
+        redo = (MenuItem) loader.getNamespace().get("redo");
         mainBox = (HBox) loader.getNamespace().get("mainBox");
         toolBox = (HBox) loader.getNamespace().get("toolBox");
         toolBar = (ToolBar) loader.getNamespace().get("toolBar");
@@ -99,8 +115,10 @@ public class Main extends Application {
         txtHex.setTextFormatter(hexFormatter());
         // Brush + eraser functionality
         GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setImageSmoothing(false);
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        changeList.add(takeSnapshot());
         ToggleGroup toggleGroup = new ToggleGroup();
         brush.setToggleGroup(toggleGroup);
         eraser.setToggleGroup(toggleGroup);
@@ -129,34 +147,35 @@ public class Main extends Application {
         canvasBox.setOnMouseExited(event -> scene.setCursor(Cursor.DEFAULT));
         canvasBox.setOnMouseEntered(event -> scene.setCursor(currentCursor));
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
-                event -> {
-            if(brush.isSelected()){
-                gc.setLineWidth(1);
-                gc.setStroke(currentPaint);
-            }else if(eraser.isSelected()){
-                gc.setLineWidth(10);
-                gc.setStroke(Color.WHITE);
-            }
-                        gc.beginPath();
-                        gc.moveTo(event.getX(), event.getY());
-                        gc.stroke();
-                });
-
+            event -> {
+                changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
+                if(brush.isSelected()){
+                    gc.setLineWidth(2);
+                    gc.setStroke(currentPaint);
+                }else if(eraser.isSelected()){
+                    gc.setLineWidth(10);
+                    gc.setStroke(Color.WHITE);
+                }
+                gc.beginPath();
+                gc.moveTo(event.getX(), event.getY());
+                gc.stroke();
+            });
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED,
-                event -> {
-                        gc.lineTo(event.getX(), event.getY());
-                        gc.stroke();
-                        gc.closePath();
-                        gc.beginPath();
-                        gc.moveTo(event.getX(), event.getY());
-                });
-
+            event -> {
+                gc.lineTo(event.getX(), event.getY());
+                gc.stroke();
+                gc.closePath();
+                gc.beginPath();
+                gc.moveTo(event.getX(), event.getY());
+            });
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED,
-                event -> {
-                        gc.lineTo(event.getX(), event.getY());
-                        gc.stroke();
-                        gc.closePath();
-                });
+            event -> {
+                gc.lineTo(event.getX(), event.getY());
+                gc.stroke();
+                gc.closePath();
+                changeList.add(takeSnapshot());
+                currentIdx++;
+            });
         // Color selection + binding of Sliders and TextBoxes
         currentPaint = Color.web("#000000");
         colorView.setStyle("-fx-background-color:#000000");
@@ -200,6 +219,9 @@ public class Main extends Application {
         canvasBox.prefWidthProperty().bind(primaryStage.widthProperty());
         canvasBox.prefHeightProperty().bind(primaryStage.heightProperty().subtract(menuBar.prefHeightProperty()).subtract(mainBox.prefHeightProperty()));
         colorDisplay.prefWidthProperty().bind(colorBox.prefWidthProperty().subtract(RGBControls.prefWidthProperty()));
+        // Undo/redo functionality
+        undo.setOnAction(event -> undo());
+        redo.setOnAction(event -> redo());
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
         primaryStage.setTitle("PaintingApp");
         primaryStage.show();
@@ -236,6 +258,29 @@ public class Main extends Application {
                 event.consume();
             }
         });
+    }
+    // Take a snapshot of the current state of the canvas
+    public WritableImage takeSnapshot(){
+        WritableImage wi = new WritableImage((int)Math.rint(canvas.getWidth()), (int)Math.rint(canvas.getHeight()));
+        SnapshotParameters sp = new SnapshotParameters();
+        sp.setDepthBuffer(true);
+        return canvas.snapshot(sp, wi);
+    }
+    // Jump to the previous snapshot
+    public void undo(){
+        if(currentIdx > 0 && currentIdx < changeList.size()){
+            currentIdx--;
+            GraphicsContext gc = canvas.getGraphicsContext2D();
+            gc.drawImage(changeList.get(currentIdx),0,0);
+        }
+    }
+    // Jump to the next snapshot
+    public void redo(){
+        if(currentIdx >= 0 && currentIdx < changeList.size()-1){
+            currentIdx++;
+            GraphicsContext gc = canvas.getGraphicsContext2D();
+            gc.drawImage(changeList.get(currentIdx),0,0);
+        }
     }
 
     public static void main(String[] args) {
