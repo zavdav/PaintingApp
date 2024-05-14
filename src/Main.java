@@ -1,5 +1,6 @@
 import javafx.beans.binding.*;
 import javafx.application.Application;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.*;
@@ -17,9 +18,17 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
+
+import javax.imageio.ImageIO;
+import java.awt.image.RenderedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -27,6 +36,12 @@ public class Main extends Application {
     // Definition of FXML elements to use in Java code
     @FXML
     private MenuBar menuBar;
+    @FXML
+    private MenuItem newImg;
+    @FXML
+    private MenuItem open;
+    @FXML
+    private MenuItem save;
     @FXML
     private MenuItem undo;
     @FXML
@@ -77,6 +92,8 @@ public class Main extends Application {
     private ArrayList<WritableImage> changeList;
     // Index of the currently selected snapshot
     private int currentIdx;
+    // For determining if a file has been opened
+    private boolean isFileOpened;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -84,10 +101,11 @@ public class Main extends Application {
         Parent root = loader.load();
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
-        changeList = new ArrayList<>();
-        currentIdx = 0;
         // Injection of FXML elements
         menuBar = (MenuBar) loader.getNamespace().get("menuBar");
+        newImg = (MenuItem) loader.getNamespace().get("newImg");
+        open = (MenuItem) loader.getNamespace().get("open");
+        save = (MenuItem) loader.getNamespace().get("save");
         undo = (MenuItem) loader.getNamespace().get("undo");
         redo = (MenuItem) loader.getNamespace().get("redo");
         mainBox = (HBox) loader.getNamespace().get("mainBox");
@@ -114,11 +132,10 @@ public class Main extends Application {
         txtBlue.setTextFormatter(colorChannelFormatter());
         txtHex.setTextFormatter(hexFormatter());
         // Initialization of MenuBar and Canvas
+        changeList = new ArrayList<>();
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setImageSmoothing(false);
-        gc.setFill(Color.WHITE);
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        changeList.add(takeSnapshot());
+        createNew();
         ToggleGroup toggleGroup = new ToggleGroup();
         brush.setToggleGroup(toggleGroup);
         eraser.setToggleGroup(toggleGroup);
@@ -223,6 +240,10 @@ public class Main extends Application {
         // Undo/redo functionality
         undo.setOnAction(event -> undo());
         redo.setOnAction(event -> redo());
+        // Create new, open & save images
+        newImg.setOnAction(event -> createNew());
+        open.setOnAction(event -> open(primaryStage));
+        save.setOnAction(event -> save(primaryStage));
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
         primaryStage.setTitle("PaintingApp");
         primaryStage.show();
@@ -271,6 +292,8 @@ public class Main extends Application {
     public void undo(){
         if(currentIdx > 0 && currentIdx < changeList.size()){
             currentIdx--;
+            canvas.setWidth(changeList.get(currentIdx).getWidth());
+            canvas.setHeight(changeList.get(currentIdx).getHeight());
             GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(changeList.get(currentIdx),0,0);
         }
@@ -279,9 +302,87 @@ public class Main extends Application {
     public void redo(){
         if(currentIdx >= 0 && currentIdx < changeList.size()-1){
             currentIdx++;
+            canvas.setWidth(changeList.get(currentIdx).getWidth());
+            canvas.setHeight(changeList.get(currentIdx).getHeight());
             GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(changeList.get(currentIdx),0,0);
         }
+    }
+    // Create a blank image
+    public void createNew(){
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.WHITE);
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        changeList.clear();
+        currentIdx = 0;
+        changeList.add(takeSnapshot());
+        isFileOpened = true;
+    }
+    // Open a selected image
+    public void open(Stage stage){
+        FileChooser openFile = new FileChooser();
+        openFile.setTitle("Open File");
+        File file = openFile.showOpenDialog(stage);
+        if(isFileOpened){
+            if(!showAlert().get()){
+                open(stage);
+            }
+        }
+        if(file != null){
+            Image image = new Image(file.toURI().toString());
+            canvas.setWidth(image.getWidth());
+            canvas.setHeight(image.getHeight());
+            canvas.getGraphicsContext2D().drawImage(image, 0, 0);
+            changeList.clear();
+            currentIdx = 0;
+            WritableImage append = new WritableImage(image.getPixelReader(), (int) image.getWidth(), (int) image.getHeight());
+            changeList.add(append);
+        }
+    }
+    // Save the current image
+    public void save(Stage stage){
+        FileChooser saveFile = new FileChooser();
+        saveFile.setTitle("Save File");
+        saveFile.setInitialFileName("Untitled.png");
+        saveFile.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("PNG", "*.png")
+        );
+        File file = saveFile.showSaveDialog(stage);
+        if(file != null){
+            try{
+                WritableImage image = takeSnapshot();
+                RenderedImage renderedImage = SwingFXUtils.fromFXImage(image, null);
+                ImageIO.write(renderedImage, "png", file);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+    public AtomicBoolean showAlert(){
+        AtomicBoolean canceled = new AtomicBoolean(true);
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        Stage alertStage = (Stage) alert.getDialogPane().getScene().getWindow();
+        alertStage.getIcons().add(new Image("resources/images/warning.png"));
+        alert.setTitle("Unsaved Changes");
+        alert.setHeaderText("Would you like to save the changes to Untitled.png?");
+        ButtonType save = new ButtonType("Save");
+        ButtonType doNotSave = new ButtonType("Don't Save");
+        ButtonType cancel = new ButtonType("Cancel");
+        alert.getButtonTypes().addAll(save, doNotSave, cancel);
+        alertStage.setOnCloseRequest(event -> alert.close());
+        Optional<ButtonType> result = alert.showAndWait();
+        result.ifPresent(chosen -> {
+            if(chosen.equals(save)){
+                isFileOpened = false;
+                canceled.set(false);
+            }else if(chosen.equals(doNotSave)){
+                isFileOpened = false;
+                canceled.set(false);
+            }else if(chosen.equals(cancel)){
+                alert.close();
+            }
+        });
+        return canceled;
     }
 
     public static void main(String[] args) {
