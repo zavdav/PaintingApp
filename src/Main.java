@@ -73,9 +73,9 @@ public class Main extends Application {
     private ImageCursor currentCursor;
     // Current paint color
     private Paint currentPaint;
-    // ArrayList for canvas snapshots, required for undo/redo
+    // ArrayList of Canvas snapshots, required for undo/redo
     private ArrayList<WritableImage> changeList;
-    // Index of the current WritableImage in the ArrayList
+    // Index of the currently selected snapshot
     private int currentIdx;
 
     @Override
@@ -113,7 +113,7 @@ public class Main extends Application {
         txtGreen.setTextFormatter(colorChannelFormatter());
         txtBlue.setTextFormatter(colorChannelFormatter());
         txtHex.setTextFormatter(hexFormatter());
-        // Brush + eraser functionality
+        // Initialization of MenuBar and Canvas
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setImageSmoothing(false);
         gc.setFill(Color.WHITE);
@@ -129,6 +129,7 @@ public class Main extends Application {
         toggleGroup.selectToggle(brush);
         brush.selectedProperty().set(true);
         currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
+        // Brush + eraser functionality
         brush.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue){
                 currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
