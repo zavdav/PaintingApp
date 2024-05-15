@@ -1,6 +1,7 @@
 import javafx.beans.binding.*;
 import javafx.application.Application;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.*;
@@ -28,7 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
@@ -92,8 +93,10 @@ public class Main extends Application {
     private ArrayList<WritableImage> changeList;
     // Index of the currently selected snapshot
     private int currentIdx;
-    // For determining if a file has been opened
-    private boolean isFileOpened;
+    // File name of the current image
+    private String fileName;
+    // For determining if there are unsaved changes to a file;
+    private boolean unsavedChanges;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -135,7 +138,7 @@ public class Main extends Application {
         changeList = new ArrayList<>();
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setImageSmoothing(false);
-        createNew();
+        initCanvas(primaryStage);
         ToggleGroup toggleGroup = new ToggleGroup();
         brush.setToggleGroup(toggleGroup);
         eraser.setToggleGroup(toggleGroup);
@@ -193,6 +196,7 @@ public class Main extends Application {
                 gc.closePath();
                 changeList.add(takeSnapshot());
                 currentIdx++;
+                unsavedChanges = true;
             });
         // Color selection + binding of Sliders and TextBoxes
         currentPaint = Color.web("#000000");
@@ -241,14 +245,14 @@ public class Main extends Application {
         undo.setOnAction(event -> undo());
         redo.setOnAction(event -> redo());
         // Create new, open & save images
-        newImg.setOnAction(event -> createNew());
+        newImg.setOnAction(event -> createNew(primaryStage));
         open.setOnAction(event -> open(primaryStage));
         save.setOnAction(event -> save(primaryStage));
+        primaryStage.setOnCloseRequest(event -> handleCloseRequest(primaryStage, event));
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
-        primaryStage.setTitle("PaintingApp");
         primaryStage.show();
     }
-    // Custom TextFormatters, in order to limit input into TextBoxes
+    // Limit input into hex code TextBox to 6-digit hexadecimal numbers
     public TextFormatter<String> hexFormatter(){
         Pattern hexPattern = Pattern.compile("[0-9a-fA-F]*");
         UnaryOperator<TextFormatter.Change> filter = change -> {
@@ -261,6 +265,7 @@ public class Main extends Application {
         };
         return new TextFormatter<>(filter);
     }
+    // Limit input into color channel TextBoxes to 3-digit integers
     public TextFormatter<String> colorChannelFormatter(){
         Pattern colorChannelPattern = Pattern.compile("[0-9]*");
         UnaryOperator<TextFormatter.Change> filter = change -> {
@@ -296,6 +301,7 @@ public class Main extends Application {
             canvas.setHeight(changeList.get(currentIdx).getHeight());
             GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(changeList.get(currentIdx),0,0);
+            unsavedChanges = true;
         }
     }
     // Jump to the next snapshot
@@ -306,28 +312,60 @@ public class Main extends Application {
             canvas.setHeight(changeList.get(currentIdx).getHeight());
             GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(changeList.get(currentIdx),0,0);
+            unsavedChanges = true;
         }
     }
-    // Create a blank image
-    public void createNew(){
+    // Create a new image
+    public void createNew(Stage stage){
+        if(unsavedChanges){
+            int result = showAlert().get();
+            if(result == 1){
+                if(save(stage)){
+                    initCanvas(stage);
+                }
+            }else if(result == 2){
+                unsavedChanges = false;
+                initCanvas(stage);
+            }
+        }else{
+            initCanvas(stage);
+        }
+    }
+    // Clear the canvas and reset the changeList
+    public void initCanvas(Stage stage){
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         changeList.clear();
         currentIdx = 0;
         changeList.add(takeSnapshot());
-        isFileOpened = true;
+        fileName = "Untitled.png";
+        stage.setTitle(String.format("%s - PaintingApp", fileName));
+        unsavedChanges = false;
     }
-    // Open a selected image
+    // Open the selected image
     public void open(Stage stage){
+        if(unsavedChanges){
+            int result = showAlert().get();
+            if(result == 1){
+                if(save(stage)){
+                    writeOpenedFile(stage);
+                }
+            }else if(result == 2){
+                if(writeOpenedFile(stage)){
+                    unsavedChanges = false;
+                }
+            }
+        }else{
+            writeOpenedFile(stage);
+        }
+    }
+    // Write the selected image to the canvas
+    public boolean writeOpenedFile(Stage stage){
+        boolean written = false;
         FileChooser openFile = new FileChooser();
         openFile.setTitle("Open File");
         File file = openFile.showOpenDialog(stage);
-        if(isFileOpened){
-            if(!showAlert().get()){
-                open(stage);
-            }
-        }
         if(file != null){
             Image image = new Image(file.toURI().toString());
             canvas.setWidth(image.getWidth());
@@ -337,13 +375,19 @@ public class Main extends Application {
             currentIdx = 0;
             WritableImage append = new WritableImage(image.getPixelReader(), (int) image.getWidth(), (int) image.getHeight());
             changeList.add(append);
+            String rawPath = file.toURI().toString();
+            fileName = rawPath.substring(rawPath.lastIndexOf("/")+1);
+            stage.setTitle(String.format("%s - PaintingApp", fileName));
+            written = true;
         }
+        return written;
     }
     // Save the current image
-    public void save(Stage stage){
+    public boolean save(Stage stage){
+        boolean fileSaved = false;
         FileChooser saveFile = new FileChooser();
         saveFile.setTitle("Save File");
-        saveFile.setInitialFileName("Untitled.png");
+        saveFile.setInitialFileName(fileName);
         saveFile.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("PNG", "*.png")
         );
@@ -353,18 +397,38 @@ public class Main extends Application {
                 WritableImage image = takeSnapshot();
                 RenderedImage renderedImage = SwingFXUtils.fromFXImage(image, null);
                 ImageIO.write(renderedImage, "png", file);
+                fileSaved = true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
+        return fileSaved;
     }
-    public AtomicBoolean showAlert(){
-        AtomicBoolean canceled = new AtomicBoolean(true);
+    // Handle window close requests
+    public void handleCloseRequest(Stage stage, Event event){
+        if(unsavedChanges){
+            int result = showAlert().get();
+            if(result == 1){
+                if(save(stage)){
+                    stage.close();
+                }
+            }else if(result == 2){
+                stage.close();
+            }else{
+                event.consume();
+            }
+        }else{
+            stage.close();
+        }
+    }
+    // Show an alert if changes have not been saved
+    public AtomicInteger showAlert(){
+        AtomicInteger state = new AtomicInteger(0);
         Alert alert = new Alert(Alert.AlertType.NONE);
         Stage alertStage = (Stage) alert.getDialogPane().getScene().getWindow();
         alertStage.getIcons().add(new Image("resources/images/warning.png"));
         alert.setTitle("Unsaved Changes");
-        alert.setHeaderText("Would you like to save the changes to Untitled.png?");
+        alert.setHeaderText(String.format("Do you want to save the changes to %s?", fileName));
         ButtonType save = new ButtonType("Save");
         ButtonType doNotSave = new ButtonType("Don't Save");
         ButtonType cancel = new ButtonType("Cancel");
@@ -373,16 +437,14 @@ public class Main extends Application {
         Optional<ButtonType> result = alert.showAndWait();
         result.ifPresent(chosen -> {
             if(chosen.equals(save)){
-                isFileOpened = false;
-                canceled.set(false);
+                state.set(1);
             }else if(chosen.equals(doNotSave)){
-                isFileOpened = false;
-                canceled.set(false);
+                state.set(2);
             }else if(chosen.equals(cancel)){
                 alert.close();
             }
         });
-        return canceled;
+        return state;
     }
 
     public static void main(String[] args) {
