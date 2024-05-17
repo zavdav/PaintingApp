@@ -4,6 +4,7 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Bounds;
 import javafx.scene.*;
 import javafx.scene.Cursor;
 import javafx.scene.canvas.*;
@@ -170,33 +171,43 @@ public class Main extends Application {
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
             event -> {
                 changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
-                if(brush.isSelected()){
-                    gc.setLineWidth(2);
-                    gc.setStroke(currentPaint);
-                }else if(eraser.isSelected()){
-                    gc.setLineWidth(10);
-                    gc.setStroke(Color.WHITE);
+                if(!eyedropper.isSelected()){
+                    if(brush.isSelected()){
+                        gc.setLineWidth(2);
+                        gc.setStroke(currentPaint);
+                    }else{
+                        gc.setLineWidth(10);
+                        gc.setStroke(Color.WHITE);
+                    }
+                    gc.beginPath();
+                    gc.moveTo(event.getX(), event.getY());
+                    gc.stroke();
+                }else{
+                    eyedropperSetColor(event);
                 }
-                gc.beginPath();
-                gc.moveTo(event.getX(), event.getY());
-                gc.stroke();
             });
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED,
             event -> {
-                gc.lineTo(event.getX(), event.getY());
-                gc.stroke();
-                gc.closePath();
-                gc.beginPath();
-                gc.moveTo(event.getX(), event.getY());
+                if(!eyedropper.isSelected()){
+                    gc.lineTo(event.getX(), event.getY());
+                    gc.stroke();
+                    gc.closePath();
+                    gc.beginPath();
+                    gc.moveTo(event.getX(), event.getY());
+                }else{
+                    eyedropperSetColor(event);
+                }
             });
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED,
             event -> {
-                gc.lineTo(event.getX(), event.getY());
-                gc.stroke();
-                gc.closePath();
-                changeList.add(takeSnapshot());
-                currentIdx++;
-                unsavedChanges = true;
+                if(!eyedropper.isSelected()){
+                    gc.lineTo(event.getX(), event.getY());
+                    gc.stroke();
+                    gc.closePath();
+                    changeList.add(takeSnapshot());
+                    currentIdx++;
+                    unsavedChanges = true;
+                }
             });
         // Color selection + binding of Sliders and TextBoxes
         currentPaint = Color.web("#000000");
@@ -251,6 +262,10 @@ public class Main extends Application {
         primaryStage.setOnCloseRequest(event -> handleCloseRequest(primaryStage, event));
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
         primaryStage.show();
+        gc.setFill(new Color(0,0,0,1));
+        gc.fillRect(100, 100, 75, 50);
+        changeList.add(takeSnapshot());
+        currentIdx++;
     }
     // Limit input into hex code TextBox to 6-digit hexadecimal numbers
     public TextFormatter<String> hexFormatter(){
@@ -288,7 +303,11 @@ public class Main extends Application {
     }
     // Take a snapshot of the current state of the canvas
     public WritableImage takeSnapshot(){
-        WritableImage wi = new WritableImage((int)Math.rint(canvas.getWidth()), (int)Math.rint(canvas.getHeight()));
+        Bounds bounds = canvas.getLayoutBounds();
+        WritableImage wi = new WritableImage(
+                (int) bounds.getWidth(),
+                (int) bounds.getHeight()
+        );
         SnapshotParameters sp = new SnapshotParameters();
         sp.setDepthBuffer(true);
         return canvas.snapshot(sp, wi);
@@ -445,6 +464,16 @@ public class Main extends Application {
             }
         });
         return state;
+    }
+    // Let the eyedropper set the current color
+    public void eyedropperSetColor(MouseEvent event){
+        WritableImage wi = takeSnapshot();
+        txtHex.setText(String.format("%s",
+                wi.getPixelReader().getColor(
+                        (int) Math.round(event.getX()),
+                        (int) Math.round(event.getY())
+                )
+        ).substring(2,8).toUpperCase());
     }
 
     public static void main(String[] args) {
