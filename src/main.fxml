@@ -82,6 +82,15 @@
                               </ImageView>
                            </graphic>
                         </ToggleButton>
+                        <ToggleButton fx:id="paintBucket" mnemonicParsing="false">
+                           <graphic>
+                              <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@resources/images/paint-bucket.png" />
+                                 </image>
+                              </ImageView>
+                           </graphic>
+                        </ToggleButton>
                         <ToggleButton fx:id="eyedropper" mnemonicParsing="false">
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">

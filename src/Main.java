@@ -25,11 +25,13 @@ import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -58,6 +60,8 @@ public class Main extends Application {
     private ToggleButton brush;
     @FXML
     private ToggleButton eraser;
+    @FXML
+    private ToggleButton paintBucket;
     @FXML
     private ToggleButton eyedropper;
     @FXML
@@ -117,6 +121,7 @@ public class Main extends Application {
         toolBar = (ToolBar) loader.getNamespace().get("toolBar");
         brush = (ToggleButton) loader.getNamespace().get("brush");
         eraser = (ToggleButton) loader.getNamespace().get("eraser");
+        paintBucket = (ToggleButton) loader.getNamespace().get("paintBucket");
         eyedropper = (ToggleButton) loader.getNamespace().get("eyedropper");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
         canvasBox = (HBox) loader.getNamespace().get("canvasBox");
@@ -143,6 +148,7 @@ public class Main extends Application {
         ToggleGroup toggleGroup = new ToggleGroup();
         brush.setToggleGroup(toggleGroup);
         eraser.setToggleGroup(toggleGroup);
+        paintBucket.setToggleGroup(toggleGroup);
         eyedropper.setToggleGroup(toggleGroup);
         addSelectionEventFilter(brush);
         addSelectionEventFilter(eraser);
@@ -161,6 +167,11 @@ public class Main extends Application {
                 currentCursor = new ImageCursor(new Image("resources/images/cursor_eraser.png"));
             }
         });
+        paintBucket.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue){
+                currentCursor = new ImageCursor(new Image("resources/images/cursor_paintbucket.png"));
+            }
+        });
         eyedropper.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue){
                 currentCursor = new ImageCursor(new Image("resources/images/cursor_eyedropper.png"));
@@ -171,7 +182,11 @@ public class Main extends Application {
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
             event -> {
                 changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
-                if(!eyedropper.isSelected()){
+                if(eyedropper.isSelected()){
+                    eyedropperSetColor(event);
+                }else if(paintBucket.isSelected()){
+                    floodFill((int) event.getX(), (int) event.getY(), (Color) currentPaint);
+                }else{
                     if(brush.isSelected()){
                         gc.setLineWidth(2);
                         gc.setStroke(currentPaint);
@@ -182,25 +197,28 @@ public class Main extends Application {
                     gc.beginPath();
                     gc.moveTo(event.getX(), event.getY());
                     gc.stroke();
-                }else{
-                    eyedropperSetColor(event);
                 }
             });
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED,
             event -> {
-                if(!eyedropper.isSelected()){
+                if(eyedropper.isSelected()){
+                    eyedropperSetColor(event);
+                }else if(!eyedropper.isSelected() && !paintBucket.isSelected()){
                     gc.lineTo(event.getX(), event.getY());
                     gc.stroke();
                     gc.closePath();
                     gc.beginPath();
                     gc.moveTo(event.getX(), event.getY());
-                }else{
-                    eyedropperSetColor(event);
                 }
             });
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED,
             event -> {
-                if(!eyedropper.isSelected()){
+                if(paintBucket.isSelected()){
+                    changeList.add(takeSnapshot());
+                    currentIdx++;
+                    unsavedChanges = true;
+                }
+                if(!paintBucket.isSelected() && !eyedropper.isSelected()){
                     gc.lineTo(event.getX(), event.getY());
                     gc.stroke();
                     gc.closePath();
@@ -262,8 +280,6 @@ public class Main extends Application {
         primaryStage.setOnCloseRequest(event -> handleCloseRequest(primaryStage, event));
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
         primaryStage.show();
-        gc.setFill(new Color(0,0,0,1));
-        gc.fillRect(100, 100, 75, 50);
         changeList.add(takeSnapshot());
         currentIdx++;
     }
@@ -474,6 +490,44 @@ public class Main extends Application {
                         (int) Math.round(event.getY())
                 )
         ).substring(2,8).toUpperCase());
+    }
+    // Paint bucket tool
+    public void floodFill(int x, int y, Color newColor){
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        PixelReader reader = takeSnapshot().getPixelReader();
+        PixelWriter writer = gc.getPixelWriter();
+        Color oldColor = reader.getColor(x, y);
+        if(!oldColor.equals(newColor)){
+            Vector<Point> queue = new Vector<>();
+            queue.add(new Point(x, y));
+            writer.setColor(x, y, newColor);
+            while(queue.size() > 0){
+                Point currentPixel = queue.get(0);
+                queue.remove(0);
+                int posX = currentPixel.x;
+                int posY = currentPixel.y;
+                if(isValid(reader, posX+1, posY, oldColor)){
+                    writer.setColor(posX+1, posY, newColor);
+                    queue.add(new Point(posX+1, posY));
+                }
+                if(isValid(reader, posX-1, posY, oldColor)){
+                    writer.setColor(posX-1, posY, newColor);
+                    queue.add(new Point(posX-1, posY));
+                }
+                if(isValid(reader, posX, posY+1, oldColor)){
+                    writer.setColor(posX, posY+1, newColor);
+                    queue.add(new Point(posX, posY+1));
+                }
+                if(isValid(reader, posX, posY-1, oldColor)){
+                    writer.setColor(posX, posY-1, newColor);
+                    queue.add(new Point(posX, posY-1));
+                }
+                reader = takeSnapshot().getPixelReader();
+            }
+        }
+    }
+    public boolean isValid(PixelReader reader, int x, int y, Color oldColor){
+        return x >= 0 && x < (int) canvas.getWidth() && y >= 0 && y < (int) canvas.getHeight() && reader.getColor(x, y).equals(oldColor);
     }
 
     public static void main(String[] args) {
