@@ -431,6 +431,10 @@ public class Main extends Application {
                 WritableImage image = takeSnapshot();
                 RenderedImage renderedImage = SwingFXUtils.fromFXImage(image, null);
                 ImageIO.write(renderedImage, "png", file);
+                String rawPath = file.toURI().toString();
+                fileName = rawPath.substring(rawPath.lastIndexOf("/")+1);
+                stage.setTitle(String.format("%s - PaintingApp", fileName));
+                unsavedChanges = false;
                 fileSaved = true;
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -538,6 +542,10 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
+        System.setProperty("prism.allowhidpi", "false");
+        System.setProperty("glass.win.uiScale", "100%");
+        System.setProperty("glass.win.renderScale", "100%");
+        System.setProperty("glass.gtk.uiScale", "100%");
         launch(args);
     }
 }
