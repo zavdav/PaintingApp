@@ -31,7 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
-import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -491,14 +490,18 @@ public class Main extends Application {
                 )
         ).substring(2,8).toUpperCase());
     }
-    // Paint bucket tool
+    // Flood fill algorithm used for the paint bucket tool
     public void floodFill(int x, int y, Color newColor){
         GraphicsContext gc = canvas.getGraphicsContext2D();
-        PixelReader reader = takeSnapshot().getPixelReader();
+        WritableImage image = takeSnapshot();
+        PixelReader reader = image.getPixelReader();
+        PixelWriter imgWriter = image.getPixelWriter();
         PixelWriter writer = gc.getPixelWriter();
         Color oldColor = reader.getColor(x, y);
+        int w = (int) canvas.getWidth();
+        int h = (int) canvas.getHeight();
         if(!oldColor.equals(newColor)){
-            Vector<Point> queue = new Vector<>();
+            ArrayList<Point> queue = new ArrayList<>();
             queue.add(new Point(x, y));
             writer.setColor(x, y, newColor);
             while(queue.size() > 0){
@@ -506,28 +509,32 @@ public class Main extends Application {
                 queue.remove(0);
                 int posX = currentPixel.x;
                 int posY = currentPixel.y;
-                if(isValid(reader, posX+1, posY, oldColor)){
+                if(isValid(reader, posX+1, posY, w, h, oldColor)){
+                    imgWriter.setColor(posX+1, posY, newColor);
                     writer.setColor(posX+1, posY, newColor);
                     queue.add(new Point(posX+1, posY));
                 }
-                if(isValid(reader, posX-1, posY, oldColor)){
+                if(isValid(reader, posX-1, posY, w, h, oldColor)){
+                    imgWriter.setColor(posX-1, posY, newColor);
                     writer.setColor(posX-1, posY, newColor);
                     queue.add(new Point(posX-1, posY));
                 }
-                if(isValid(reader, posX, posY+1, oldColor)){
+                if(isValid(reader, posX, posY+1, w, h, oldColor)){
+                    imgWriter.setColor(posX, posY+1, newColor);
                     writer.setColor(posX, posY+1, newColor);
                     queue.add(new Point(posX, posY+1));
                 }
-                if(isValid(reader, posX, posY-1, oldColor)){
+                if(isValid(reader, posX, posY-1, w, h, oldColor)){
+                    imgWriter.setColor(posX, posY-1, newColor);
                     writer.setColor(posX, posY-1, newColor);
                     queue.add(new Point(posX, posY-1));
                 }
-                reader = takeSnapshot().getPixelReader();
             }
         }
     }
-    public boolean isValid(PixelReader reader, int x, int y, Color oldColor){
-        return x >= 0 && x < (int) canvas.getWidth() && y >= 0 && y < (int) canvas.getHeight() && reader.getColor(x, y).equals(oldColor);
+    // Check if a pixel's color should be replaced with the fill color
+    public boolean isValid(PixelReader reader, int x, int y, int w, int h, Color oldColor){
+        return x >= 0 && x < w && y >= 0 && y < h && reader.getColor(x, y).equals(oldColor);
     }
 
     public static void main(String[] args) {
