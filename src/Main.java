@@ -18,8 +18,11 @@ import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Line;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
@@ -64,6 +67,12 @@ public class Main extends Application {
     @FXML
     private ToggleButton eyedropper;
     @FXML
+    private ToggleButton line;
+    @FXML
+    private ToggleButton oval;
+    @FXML
+    private ToggleButton rectangle;
+    @FXML
     private HBox colorBox;
     @FXML
     private HBox RGBControls;
@@ -86,11 +95,11 @@ public class Main extends Application {
     @FXML
     private Pane colorView;
     @FXML
-    private HBox canvasBox;
+    private StackPane canvasBox;
     @FXML
     private Canvas canvas;
     // Cursor of the currently selected tool
-    private ImageCursor currentCursor;
+    private Cursor currentCursor;
     // Current paint color
     private Paint currentPaint;
     // ArrayList of Canvas snapshots, required for undo/redo
@@ -101,6 +110,10 @@ public class Main extends Application {
     private String fileName;
     // For determining if there are unsaved changes to a file;
     private boolean unsavedChanges;
+    // Start coordinates of the drawn shape
+    private Point startCoords;
+    // Container to draw shapes in which will be appended to the canvas
+    private Pane shapePane;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -122,8 +135,11 @@ public class Main extends Application {
         eraser = (ToggleButton) loader.getNamespace().get("eraser");
         paintBucket = (ToggleButton) loader.getNamespace().get("paintBucket");
         eyedropper = (ToggleButton) loader.getNamespace().get("eyedropper");
+        line = (ToggleButton) loader.getNamespace().get("line");
+        oval = (ToggleButton) loader.getNamespace().get("oval");
+        rectangle = (ToggleButton) loader.getNamespace().get("rectangle");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
-        canvasBox = (HBox) loader.getNamespace().get("canvasBox");
+        canvasBox = (StackPane) loader.getNamespace().get("canvasBox");
         RGBControls = (HBox) loader.getNamespace().get("RGBControls");
         redSlider = (Slider) loader.getNamespace().get("redSlider");
         greenSlider = (Slider) loader.getNamespace().get("greenSlider");
@@ -141,6 +157,12 @@ public class Main extends Application {
         txtHex.setTextFormatter(hexFormatter());
         // Initialization of MenuBar and Canvas
         changeList = new ArrayList<>();
+        shapePane = new Pane();
+        shapePane.setPrefWidth(canvas.getWidth());
+        shapePane.setPrefHeight(canvas.getHeight());
+        shapePane.setMaxWidth(Region.USE_PREF_SIZE);
+        shapePane.setMaxHeight(Region.USE_PREF_SIZE);
+        shapePane.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setImageSmoothing(false);
         initCanvas(primaryStage);
@@ -149,78 +171,94 @@ public class Main extends Application {
         eraser.setToggleGroup(toggleGroup);
         paintBucket.setToggleGroup(toggleGroup);
         eyedropper.setToggleGroup(toggleGroup);
+        line.setToggleGroup(toggleGroup);
+        oval.setToggleGroup(toggleGroup);
+        rectangle.setToggleGroup(toggleGroup);
         addSelectionEventFilter(brush);
         addSelectionEventFilter(eraser);
         addSelectionEventFilter(eyedropper);
+        addSelectionEventFilter(paintBucket);
+        addSelectionEventFilter(line);
+        addSelectionEventFilter(oval);
+        addSelectionEventFilter(rectangle);
         toggleGroup.selectToggle(brush);
         brush.selectedProperty().set(true);
         currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
-        // Brush + eraser functionality
-        brush.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue){
-                currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
-            }
-        });
-        eraser.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue){
-                currentCursor = new ImageCursor(new Image("resources/images/cursor_eraser.png"));
-            }
-        });
-        paintBucket.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue){
-                currentCursor = new ImageCursor(new Image("resources/images/cursor_paintbucket.png"));
-            }
-        });
-        eyedropper.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue){
-                currentCursor = new ImageCursor(new Image("resources/images/cursor_eyedropper.png"));
-            }
-        });
+        // Functionality of tools
+        addToolCursor(brush, new ImageCursor(new Image("resources/images/cursor_brush.png")));
+        addToolCursor(eraser, new ImageCursor(new Image("resources/images/cursor_eraser.png")));
+        addToolCursor(paintBucket, new ImageCursor(new Image("resources/images/cursor_paintbucket.png")));
+        addToolCursor(eyedropper, new ImageCursor(new Image("resources/images/cursor_eyedropper.png")));
+        addToolCursor(line, Cursor.CROSSHAIR);
+        addToolCursor(oval, Cursor.CROSSHAIR);
+        addToolCursor(oval, Cursor.CROSSHAIR);
         canvasBox.setOnMouseExited(event -> scene.setCursor(Cursor.DEFAULT));
         canvasBox.setOnMouseEntered(event -> scene.setCursor(currentCursor));
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
             event -> {
-                changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
-                if(eyedropper.isSelected()){
-                    eyedropperSetColor(event);
-                }else if(paintBucket.isSelected()){
-                    floodFill((int) event.getX(), (int) event.getY(), (Color) currentPaint);
-                }else{
-                    if(brush.isSelected()){
-                        gc.setLineWidth(2);
-                        gc.setStroke(currentPaint);
+                if(!eyedropper.isSelected()){
+                    changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
+                    if(brush.isSelected() || eraser.isSelected()){
+                        if(brush.isSelected()){
+                            gc.setLineWidth(2);
+                            gc.setStroke(currentPaint);
+                        }else{
+                            gc.setLineWidth(10);
+                            gc.setStroke(Color.WHITE);
+                        }
+                        gc.beginPath();
+                        gc.moveTo(event.getX(), event.getY());
+                        gc.stroke();
+                    }else if(paintBucket.isSelected()){
+                        floodFill((int) event.getX(), (int) event.getY(), (Color) currentPaint);
+                    }else if(line.isSelected()){
+                        initDrawShape(event);
+                        drawLine(event);
+                    }else if(oval.isSelected()){
+                        // TODO
                     }else{
-                        gc.setLineWidth(10);
-                        gc.setStroke(Color.WHITE);
+                        // TODO
                     }
-                    gc.beginPath();
-                    gc.moveTo(event.getX(), event.getY());
-                    gc.stroke();
+                }else{
+                    eyedropperSetColor(event);
                 }
             });
         canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED,
             event -> {
-                if(eyedropper.isSelected()){
-                    eyedropperSetColor(event);
-                }else if(!eyedropper.isSelected() && !paintBucket.isSelected()){
-                    gc.lineTo(event.getX(), event.getY());
-                    gc.stroke();
-                    gc.closePath();
-                    gc.beginPath();
-                    gc.moveTo(event.getX(), event.getY());
+                if(!paintBucket.isSelected()){
+                    if(!eyedropper.isSelected()){
+                        if(brush.isSelected() || eraser.isSelected()){
+                            gc.lineTo(event.getX(), event.getY());
+                            gc.stroke();
+                            gc.closePath();
+                            gc.beginPath();
+                            gc.moveTo(event.getX(), event.getY());
+                        }else if(line.isSelected()){
+                            drawLine(event);
+                        }else if(oval.isSelected()){
+                            // TODO
+                        }else{
+                            // TODO
+                        }
+                    }else{
+                        eyedropperSetColor(event);
+                    }
                 }
             });
         canvas.addEventHandler(MouseEvent.MOUSE_RELEASED,
             event -> {
-                if(paintBucket.isSelected()){
-                    changeList.add(takeSnapshot());
-                    currentIdx++;
-                    unsavedChanges = true;
-                }
-                if(!paintBucket.isSelected() && !eyedropper.isSelected()){
-                    gc.lineTo(event.getX(), event.getY());
-                    gc.stroke();
-                    gc.closePath();
+                if(!eyedropper.isSelected()){
+                    if(brush.isSelected() || eraser.isSelected()){
+                        gc.lineTo(event.getX(), event.getY());
+                        gc.stroke();
+                        gc.closePath();
+                    }else if(line.isSelected()){
+                        drawLine(event);
+                    }else if(oval.isSelected()){
+                        // TODO
+                    }else{
+                        // TODO
+                    }
                     changeList.add(takeSnapshot());
                     currentIdx++;
                     unsavedChanges = true;
@@ -279,8 +317,6 @@ public class Main extends Application {
         primaryStage.setOnCloseRequest(event -> handleCloseRequest(primaryStage, event));
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
         primaryStage.show();
-        changeList.add(takeSnapshot());
-        currentIdx++;
     }
     // Limit input into hex code TextBox to 6-digit hexadecimal numbers
     public TextFormatter<String> hexFormatter(){
@@ -307,6 +343,14 @@ public class Main extends Application {
             }
         };
         return new TextFormatter<>(filter);
+    }
+    // Specify a cursor for a tool
+    public void addToolCursor(ToggleButton toggle, Cursor cursor){
+        toggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue){
+                currentCursor = cursor;
+            }
+        });
     }
     // Prevent the currently selected ToggleButton from being deselected
     public void addSelectionEventFilter(ToggleButton toggleButton){
@@ -539,6 +583,31 @@ public class Main extends Application {
     // Check if a pixel's color should be replaced with the fill color
     public boolean isValid(PixelReader reader, int x, int y, int w, int h, Color oldColor){
         return x >= 0 && x < w && y >= 0 && y < h && reader.getColor(x, y).equals(oldColor);
+    }
+    public void drawLine(MouseEvent event){
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
+            shapePane.getChildren().removeAll(shapePane.getChildren());
+            Line line = new Line();
+            line.setStartX(startCoords.x);
+            line.setStartY(startCoords.y);
+            line.setEndX(event.getX());
+            line.setEndY(event.getY());
+            shapePane.getChildren().add(line);
+        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
+            Bounds bounds = shapePane.getLayoutBounds();
+            WritableImage image = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
+            SnapshotParameters sp = new SnapshotParameters();
+            sp.setDepthBuffer(true);
+            sp.setFill(new Color(0, 0, 0, 0));
+            WritableImage newImage = shapePane.snapshot(sp, image);
+            GraphicsContext gc = canvas.getGraphicsContext2D();
+            gc.drawImage(image, 0, 0);
+            canvasBox.getChildren().remove(shapePane);
+        }
+    }
+    public void initDrawShape(MouseEvent event){
+        startCoords = new Point((int) event.getX(), (int) event.getY());
+        canvasBox.getChildren().add(shapePane);
     }
 
     public static void main(String[] args) {
