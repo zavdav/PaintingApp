@@ -198,10 +198,10 @@ public class Main extends Application {
             event -> {
                 if(!eyedropper.isSelected()){
                     changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
+                    gc.setStroke(currentPaint);
                     if(brush.isSelected() || eraser.isSelected()){
                         if(brush.isSelected()){
                             gc.setLineWidth(2);
-                            gc.setStroke(currentPaint);
                         }else{
                             gc.setLineWidth(10);
                             gc.setStroke(Color.WHITE);
@@ -588,6 +588,7 @@ public class Main extends Application {
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
             shapePane.getChildren().removeAll(shapePane.getChildren());
             Line line = new Line();
+            line.setStroke(currentPaint);
             line.setStartX(startCoords.x);
             line.setStartY(startCoords.y);
             line.setEndX(event.getX());
@@ -599,7 +600,7 @@ public class Main extends Application {
             SnapshotParameters sp = new SnapshotParameters();
             sp.setDepthBuffer(true);
             sp.setFill(new Color(0, 0, 0, 0));
-            WritableImage newImage = shapePane.snapshot(sp, image);
+            image = shapePane.snapshot(sp, image);
             GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(image, 0, 0);
             canvasBox.getChildren().remove(shapePane);
