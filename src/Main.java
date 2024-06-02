@@ -497,6 +497,8 @@ public class Main extends Application {
             if(result == 1){
                 if(save(stage)){
                     stage.close();
+                }else{
+                    event.consume();
                 }
             }else if(result == 2){
                 stage.close();
