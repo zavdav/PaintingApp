@@ -22,6 +22,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Line;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -69,7 +70,7 @@ public class Main extends Application {
     @FXML
     private ToggleButton line;
     @FXML
-    private ToggleButton oval;
+    private ToggleButton ellipse;
     @FXML
     private ToggleButton rectangle;
     @FXML
@@ -136,7 +137,7 @@ public class Main extends Application {
         paintBucket = (ToggleButton) loader.getNamespace().get("paintBucket");
         eyedropper = (ToggleButton) loader.getNamespace().get("eyedropper");
         line = (ToggleButton) loader.getNamespace().get("line");
-        oval = (ToggleButton) loader.getNamespace().get("oval");
+        ellipse = (ToggleButton) loader.getNamespace().get("ellipse");
         rectangle = (ToggleButton) loader.getNamespace().get("rectangle");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
         canvasBox = (StackPane) loader.getNamespace().get("canvasBox");
@@ -172,14 +173,14 @@ public class Main extends Application {
         paintBucket.setToggleGroup(toggleGroup);
         eyedropper.setToggleGroup(toggleGroup);
         line.setToggleGroup(toggleGroup);
-        oval.setToggleGroup(toggleGroup);
+        ellipse.setToggleGroup(toggleGroup);
         rectangle.setToggleGroup(toggleGroup);
         addSelectionEventFilter(brush);
         addSelectionEventFilter(eraser);
         addSelectionEventFilter(eyedropper);
         addSelectionEventFilter(paintBucket);
         addSelectionEventFilter(line);
-        addSelectionEventFilter(oval);
+        addSelectionEventFilter(ellipse);
         addSelectionEventFilter(rectangle);
         toggleGroup.selectToggle(brush);
         brush.selectedProperty().set(true);
@@ -190,8 +191,8 @@ public class Main extends Application {
         addToolCursor(paintBucket, new ImageCursor(new Image("resources/images/cursor_paintbucket.png")));
         addToolCursor(eyedropper, new ImageCursor(new Image("resources/images/cursor_eyedropper.png")));
         addToolCursor(line, Cursor.CROSSHAIR);
-        addToolCursor(oval, Cursor.CROSSHAIR);
-        addToolCursor(oval, Cursor.CROSSHAIR);
+        addToolCursor(ellipse, Cursor.CROSSHAIR);
+        addToolCursor(rectangle, Cursor.CROSSHAIR);
         canvasBox.setOnMouseExited(event -> scene.setCursor(Cursor.DEFAULT));
         canvasBox.setOnMouseEntered(event -> scene.setCursor(currentCursor));
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
@@ -214,8 +215,9 @@ public class Main extends Application {
                     }else if(line.isSelected()){
                         initDrawShape(event);
                         drawLine(event);
-                    }else if(oval.isSelected()){
-                        // TODO
+                    }else if(ellipse.isSelected()){
+                        initDrawShape(event);
+                        drawEllipse(event);
                     }else{
                         // TODO
                     }
@@ -235,8 +237,8 @@ public class Main extends Application {
                             gc.moveTo(event.getX(), event.getY());
                         }else if(line.isSelected()){
                             drawLine(event);
-                        }else if(oval.isSelected()){
-                            // TODO
+                        }else if(ellipse.isSelected()){
+                            drawEllipse(event);
                         }else{
                             // TODO
                         }
@@ -254,8 +256,8 @@ public class Main extends Application {
                         gc.closePath();
                     }else if(line.isSelected()){
                         drawLine(event);
-                    }else if(oval.isSelected()){
-                        // TODO
+                    }else if(ellipse.isSelected()){
+                        drawEllipse(event);
                     }else{
                         // TODO
                     }
@@ -595,20 +597,38 @@ public class Main extends Application {
             line.setEndY(event.getY());
             shapePane.getChildren().add(line);
         }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
-            Bounds bounds = shapePane.getLayoutBounds();
-            WritableImage image = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
-            SnapshotParameters sp = new SnapshotParameters();
-            sp.setDepthBuffer(true);
-            sp.setFill(new Color(0, 0, 0, 0));
-            image = shapePane.snapshot(sp, image);
-            GraphicsContext gc = canvas.getGraphicsContext2D();
-            gc.drawImage(image, 0, 0);
-            canvasBox.getChildren().remove(shapePane);
+            appendShape();
+        }
+    }
+    public void drawEllipse(MouseEvent event){
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
+            shapePane.getChildren().removeAll(shapePane.getChildren());
+            Ellipse ellipse = new Ellipse();
+            ellipse.setFill(Color.TRANSPARENT);
+            ellipse.setStroke(currentPaint);
+            ellipse.setCenterX((startCoords.x+event.getX())/2);
+            ellipse.setCenterY((startCoords.y+event.getY())/2);
+            ellipse.setRadiusX(Math.abs(event.getX()-ellipse.getCenterX()));
+            ellipse.setRadiusY(Math.abs(event.getY()-ellipse.getCenterY()));
+            shapePane.getChildren().add(ellipse);
+        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
+            appendShape();
         }
     }
     public void initDrawShape(MouseEvent event){
         startCoords = new Point((int) event.getX(), (int) event.getY());
         canvasBox.getChildren().add(shapePane);
+    }
+    public void appendShape(){
+        Bounds bounds = shapePane.getLayoutBounds();
+        WritableImage image = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
+        SnapshotParameters sp = new SnapshotParameters();
+        sp.setDepthBuffer(true);
+        sp.setFill(new Color(0, 0, 0, 0));
+        image = shapePane.snapshot(sp, image);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.drawImage(image, 0, 0);
+        canvasBox.getChildren().remove(shapePane);
     }
 
     public static void main(String[] args) {
