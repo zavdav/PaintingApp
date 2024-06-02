@@ -24,6 +24,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Ellipse;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
@@ -219,7 +220,8 @@ public class Main extends Application {
                         initDrawShape(event);
                         drawEllipse(event);
                     }else{
-                        // TODO
+                        initDrawShape(event);
+                        drawRectangle(event);
                     }
                 }else{
                     eyedropperSetColor(event);
@@ -240,7 +242,7 @@ public class Main extends Application {
                         }else if(ellipse.isSelected()){
                             drawEllipse(event);
                         }else{
-                            // TODO
+                            drawRectangle(event);
                         }
                     }else{
                         eyedropperSetColor(event);
@@ -259,7 +261,7 @@ public class Main extends Application {
                     }else if(ellipse.isSelected()){
                         drawEllipse(event);
                     }else{
-                        // TODO
+                        drawRectangle(event);
                     }
                     changeList.add(takeSnapshot());
                     currentIdx++;
@@ -586,6 +588,7 @@ public class Main extends Application {
     public boolean isValid(PixelReader reader, int x, int y, int w, int h, Color oldColor){
         return x >= 0 && x < w && y >= 0 && y < h && reader.getColor(x, y).equals(oldColor);
     }
+    // Draws a line
     public void drawLine(MouseEvent event){
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
             shapePane.getChildren().removeAll(shapePane.getChildren());
@@ -600,6 +603,7 @@ public class Main extends Application {
             appendShape();
         }
     }
+    // Draws an ellipse
     public void drawEllipse(MouseEvent event){
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
             shapePane.getChildren().removeAll(shapePane.getChildren());
@@ -615,10 +619,28 @@ public class Main extends Application {
             appendShape();
         }
     }
+    // Draws a rectangle
+    public void drawRectangle(MouseEvent event){
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
+            shapePane.getChildren().removeAll(shapePane.getChildren());
+            Rectangle rectangle = new Rectangle();
+            rectangle.setFill(Color.TRANSPARENT);
+            rectangle.setStroke(currentPaint);
+            rectangle.setX(Math.min(startCoords.x, event.getX()));
+            rectangle.setY(Math.min(startCoords.y, event.getY()));
+            rectangle.setWidth(Math.abs(startCoords.x-event.getX()));
+            rectangle.setHeight(Math.abs(startCoords.y-event.getY()));
+            shapePane.getChildren().add(rectangle);
+        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
+            appendShape();
+        }
+    }
+    // Set start coordinates and add pane
     public void initDrawShape(MouseEvent event){
         startCoords = new Point((int) event.getX(), (int) event.getY());
         canvasBox.getChildren().add(shapePane);
     }
+    // Writes the shape to the canvas
     public void appendShape(){
         Bounds bounds = shapePane.getLayoutBounds();
         WritableImage image = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
