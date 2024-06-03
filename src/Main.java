@@ -203,7 +203,7 @@ public class Main extends Application {
                     gc.setStroke(currentPaint);
                     if(brush.isSelected() || eraser.isSelected()){
                         if(brush.isSelected()){
-                            gc.setLineWidth(2);
+                            gc.setLineWidth(1);
                         }else{
                             gc.setLineWidth(10);
                             gc.setStroke(Color.WHITE);
