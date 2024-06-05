@@ -241,7 +241,7 @@ public class Main extends Application {
                             drawLine(event);
                         }else if(ellipse.isSelected()){
                             drawEllipse(event);
-                        }else{
+                        }else if(rectangle.isSelected()){
                             drawRectangle(event);
                         }
                     }else{
@@ -260,7 +260,7 @@ public class Main extends Application {
                         drawLine(event);
                     }else if(ellipse.isSelected()){
                         drawEllipse(event);
-                    }else{
+                    }else if(rectangle.isSelected()){
                         drawRectangle(event);
                     }
                     changeList.add(takeSnapshot());
