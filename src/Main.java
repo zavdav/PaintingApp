@@ -19,9 +19,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
-import javafx.scene.shape.Ellipse;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
@@ -96,9 +93,11 @@ public class Main extends Application {
     @FXML
     private Pane colorView;
     @FXML
-    private StackPane canvasBox;
+    private HBox canvasBox;
     @FXML
     private Canvas canvas;
+    // The canvas's GraphicsContext
+    private GraphicsContext gc;
     // Cursor of the currently selected tool
     private Cursor currentCursor;
     // Current paint color
@@ -113,8 +112,6 @@ public class Main extends Application {
     private boolean unsavedChanges;
     // Start coordinates of the drawn shape
     private Point startCoords;
-    // Container to draw shapes in which will be appended to the canvas
-    private Pane shapePane;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -141,7 +138,7 @@ public class Main extends Application {
         ellipse = (ToggleButton) loader.getNamespace().get("ellipse");
         rectangle = (ToggleButton) loader.getNamespace().get("rectangle");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
-        canvasBox = (StackPane) loader.getNamespace().get("canvasBox");
+        canvasBox = (HBox) loader.getNamespace().get("canvasBox");
         RGBControls = (HBox) loader.getNamespace().get("RGBControls");
         redSlider = (Slider) loader.getNamespace().get("redSlider");
         greenSlider = (Slider) loader.getNamespace().get("greenSlider");
@@ -159,13 +156,7 @@ public class Main extends Application {
         txtHex.setTextFormatter(hexFormatter());
         // Initialization of MenuBar and Canvas
         changeList = new ArrayList<>();
-        shapePane = new Pane();
-        shapePane.setPrefWidth(canvas.getWidth());
-        shapePane.setPrefHeight(canvas.getHeight());
-        shapePane.setMaxWidth(Region.USE_PREF_SIZE);
-        shapePane.setMaxHeight(Region.USE_PREF_SIZE);
-        shapePane.setStyle("-fx-background-color: rgba(0, 0, 0, 0)");
-        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc = canvas.getGraphicsContext2D();
         gc.setImageSmoothing(false);
         initCanvas(primaryStage);
         ToggleGroup toggleGroup = new ToggleGroup();
@@ -256,12 +247,6 @@ public class Main extends Application {
                         gc.lineTo(event.getX(), event.getY());
                         gc.stroke();
                         gc.closePath();
-                    }else if(line.isSelected()){
-                        drawLine(event);
-                    }else if(ellipse.isSelected()){
-                        drawEllipse(event);
-                    }else if(rectangle.isSelected()){
-                        drawRectangle(event);
                     }
                     changeList.add(takeSnapshot());
                     currentIdx++;
@@ -381,7 +366,6 @@ public class Main extends Application {
             currentIdx--;
             canvas.setWidth(changeList.get(currentIdx).getWidth());
             canvas.setHeight(changeList.get(currentIdx).getHeight());
-            GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(changeList.get(currentIdx),0,0);
             unsavedChanges = true;
         }
@@ -392,7 +376,6 @@ public class Main extends Application {
             currentIdx++;
             canvas.setWidth(changeList.get(currentIdx).getWidth());
             canvas.setHeight(changeList.get(currentIdx).getHeight());
-            GraphicsContext gc = canvas.getGraphicsContext2D();
             gc.drawImage(changeList.get(currentIdx),0,0);
             unsavedChanges = true;
         }
@@ -415,7 +398,6 @@ public class Main extends Application {
     }
     // Clear the canvas and reset the changeList
     public void initCanvas(Stage stage){
-        GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         changeList.clear();
@@ -546,7 +528,6 @@ public class Main extends Application {
     }
     // Flood fill algorithm used for the paint bucket tool
     public void floodFill(int x, int y, Color newColor){
-        GraphicsContext gc = canvas.getGraphicsContext2D();
         WritableImage image = takeSnapshot();
         PixelReader reader = image.getPixelReader();
         PixelWriter imgWriter = image.getPixelWriter();
@@ -593,66 +574,33 @@ public class Main extends Application {
     // Draws a line
     public void drawLine(MouseEvent event){
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            shapePane.getChildren().removeAll(shapePane.getChildren());
-            Line line = new Line();
-            line.setStroke(currentPaint);
-            line.setStartX(startCoords.x);
-            line.setStartY(startCoords.y);
-            line.setEndX(event.getX());
-            line.setEndY(event.getY());
-            shapePane.getChildren().add(line);
-        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
-            appendShape();
+            gc.drawImage(changeList.get(currentIdx),0,0);
+            gc.strokeLine(startCoords.x, startCoords.y, event.getX(), event.getY());
         }
     }
     // Draws an ellipse
     public void drawEllipse(MouseEvent event){
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            shapePane.getChildren().removeAll(shapePane.getChildren());
-            Ellipse ellipse = new Ellipse();
-            ellipse.setFill(Color.TRANSPARENT);
-            ellipse.setStroke(currentPaint);
-            ellipse.setCenterX((startCoords.x+event.getX())/2);
-            ellipse.setCenterY((startCoords.y+event.getY())/2);
-            ellipse.setRadiusX(Math.abs(event.getX()-ellipse.getCenterX()));
-            ellipse.setRadiusY(Math.abs(event.getY()-ellipse.getCenterY()));
-            shapePane.getChildren().add(ellipse);
-        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
-            appendShape();
+            gc.drawImage(changeList.get(currentIdx),0,0);
+            gc.strokeOval(Math.min(startCoords.x, event.getX()),
+                    Math.min(startCoords.y, event.getY()),
+                    Math.abs(startCoords.x-event.getX()),
+                    Math.abs(startCoords.y-event.getY()));
         }
     }
     // Draws a rectangle
     public void drawRectangle(MouseEvent event){
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            shapePane.getChildren().removeAll(shapePane.getChildren());
-            Rectangle rectangle = new Rectangle();
-            rectangle.setFill(Color.TRANSPARENT);
-            rectangle.setStroke(currentPaint);
-            rectangle.setX(Math.min(startCoords.x, event.getX()));
-            rectangle.setY(Math.min(startCoords.y, event.getY()));
-            rectangle.setWidth(Math.abs(startCoords.x-event.getX()));
-            rectangle.setHeight(Math.abs(startCoords.y-event.getY()));
-            shapePane.getChildren().add(rectangle);
-        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
-            appendShape();
+            gc.drawImage(changeList.get(currentIdx),0,0);
+            gc.strokeRect(Math.min(startCoords.x, event.getX()),
+                    Math.min(startCoords.y, event.getY()),
+                    Math.abs(startCoords.x-event.getX()),
+                    Math.abs(startCoords.y-event.getY()));
         }
     }
-    // Set start coordinates and add pane
+    // Set start coordinates
     public void initDrawShape(MouseEvent event){
         startCoords = new Point((int) event.getX(), (int) event.getY());
-        canvasBox.getChildren().add(shapePane);
-    }
-    // Writes the shape to the canvas
-    public void appendShape(){
-        Bounds bounds = shapePane.getLayoutBounds();
-        WritableImage image = new WritableImage((int) bounds.getWidth(), (int) bounds.getHeight());
-        SnapshotParameters sp = new SnapshotParameters();
-        sp.setDepthBuffer(true);
-        sp.setFill(new Color(0, 0, 0, 0));
-        image = shapePane.snapshot(sp, image);
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-        gc.drawImage(image, 0, 0);
-        canvasBox.getChildren().remove(shapePane);
     }
 
     public static void main(String[] args) {
