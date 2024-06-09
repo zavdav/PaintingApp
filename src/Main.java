@@ -16,10 +16,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.*;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Ellipse;
@@ -42,6 +39,8 @@ import java.util.regex.Pattern;
 
 public class Main extends Application {
     // Definition of FXML elements to use in Java code
+    @FXML
+    private AnchorPane anchorPane;
     @FXML
     private MenuBar menuBar;
     @FXML
@@ -124,6 +123,7 @@ public class Main extends Application {
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         // Injection of FXML elements
+        anchorPane = (AnchorPane) loader.getNamespace().get("anchorPane");
         menuBar = (MenuBar) loader.getNamespace().get("menuBar");
         newImg = (MenuItem) loader.getNamespace().get("newImg");
         open = (MenuItem) loader.getNamespace().get("open");
@@ -309,7 +309,7 @@ public class Main extends Application {
         toolBar.prefWidthProperty().bind(toolBox.prefWidthProperty());
         colorBox.prefWidthProperty().bind(Bindings.divide(mainBox.prefWidthProperty(),2));
         canvasBox.prefWidthProperty().bind(primaryStage.widthProperty());
-        canvasBox.prefHeightProperty().bind(primaryStage.heightProperty().subtract(menuBar.prefHeightProperty()).subtract(mainBox.prefHeightProperty()));
+        canvasBox.prefHeightProperty().bind(anchorPane.heightProperty().subtract(menuBar.heightProperty()).subtract(mainBox.heightProperty()));
         colorDisplay.prefWidthProperty().bind(colorBox.prefWidthProperty().subtract(RGBControls.prefWidthProperty()));
         // Undo/redo functionality
         undo.setOnAction(event -> undo());
