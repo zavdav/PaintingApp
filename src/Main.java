@@ -73,6 +73,8 @@ public class Main extends Application {
     @FXML
     private ToggleButton rectangle;
     @FXML
+    private ToggleButton resize;
+    @FXML
     private HBox colorBox;
     @FXML
     private HBox RGBControls;
@@ -144,6 +146,7 @@ public class Main extends Application {
         line = (ToggleButton) loader.getNamespace().get("line");
         ellipse = (ToggleButton) loader.getNamespace().get("ellipse");
         rectangle = (ToggleButton) loader.getNamespace().get("rectangle");
+        resize = (ToggleButton) loader.getNamespace().get("resize");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
         scrollPane = (ScrollPane) loader.getNamespace().get("scrollPane");
         scrollAnchor = (AnchorPane) loader.getNamespace().get("scrollAnchor");
@@ -176,6 +179,7 @@ public class Main extends Application {
         line.setToggleGroup(toggleGroup);
         ellipse.setToggleGroup(toggleGroup);
         rectangle.setToggleGroup(toggleGroup);
+        resize.setToggleGroup(toggleGroup);
         addSelectionEventFilter(brush);
         addSelectionEventFilter(eraser);
         addSelectionEventFilter(eyedropper);
@@ -183,6 +187,7 @@ public class Main extends Application {
         addSelectionEventFilter(line);
         addSelectionEventFilter(ellipse);
         addSelectionEventFilter(rectangle);
+        addSelectionEventFilter(resize);
         toggleGroup.selectToggle(brush);
         brush.selectedProperty().set(true);
         currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
@@ -195,7 +200,25 @@ public class Main extends Application {
         addToolCursor(ellipse, Cursor.CROSSHAIR);
         addToolCursor(rectangle, Cursor.CROSSHAIR);
         canvasBox.setOnMouseExited(event -> scene.setCursor(Cursor.DEFAULT));
-        canvasBox.setOnMouseEntered(event -> scene.setCursor(currentCursor));
+        canvasBox.setOnMouseEntered(event -> {
+            if(resize.isSelected()){
+                scene.setCursor(Cursor.DEFAULT);
+            }else{
+                scene.setCursor(currentCursor);
+            }
+        });
+        canvas.setOnMouseExited(event -> {
+            if(resize.isSelected()){
+                scene.setCursor(Cursor.DEFAULT);
+            }else{
+                scene.setCursor(currentCursor);
+            }
+        });
+        canvas.addEventHandler(MouseEvent.MOUSE_MOVED, event -> {
+            if(resize.isSelected()){
+                changeResizeCursor(event, scene);
+            }
+        });
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
             event -> {
                 if(!eyedropper.isSelected()){
@@ -638,6 +661,37 @@ public class Main extends Application {
     // Set start coordinates
     public void initDrawShape(MouseEvent event){
         startCoords = new Point((int) event.getX(), (int) event.getY());
+    }
+    public void changeResizeCursor(MouseEvent event, Scene scene){
+        if(event.getEventType() == MouseEvent.MOUSE_MOVED){
+            Point coords = new Point((int) event.getX(), (int) event.getY());
+            int width = (int) canvas.getWidth();
+            int height = (int) canvas.getHeight();
+            if(coords.x >= 0 && coords.x <= 10 && coords.y >= 0 && coords.y <= 10){
+                currentCursor = Cursor.NW_RESIZE;
+            }else if(coords.x >= width-10 && coords.x <= width && coords.y >= 0 && coords.y <= 10){
+                currentCursor = Cursor.NE_RESIZE;
+            }else if(coords.x >= 0 && coords.x <= 10 && coords.y >= height-10 && coords.y <= height){
+                currentCursor = Cursor.SW_RESIZE;
+            }else if(coords.x >= width-10 && coords.x <= width && coords.y >= height-10 && coords.y <= height){
+                currentCursor = Cursor.SE_RESIZE;
+            }else if(coords.x >= 0 && coords.x <= 10){
+                currentCursor = Cursor.W_RESIZE;
+            }else if(coords.x >= width-10 && coords.x <= width){
+                currentCursor = Cursor.E_RESIZE;
+            }else if(coords.y >= 0 && coords.y <= 10){
+                currentCursor = Cursor.N_RESIZE;
+            }else if(coords.y >= height-10 && coords.y <= height){
+                currentCursor = Cursor.S_RESIZE;
+            }else{
+                currentCursor = Cursor.DEFAULT;
+            }
+            scene.setCursor(currentCursor);
+        }
+    }
+    // Adjust the canvas size
+    public void resize(MouseEvent event){
+
     }
 
     public static void main(String[] args) {
