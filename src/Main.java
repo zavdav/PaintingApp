@@ -12,6 +12,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.image.*;
 import javafx.scene.image.Image;
@@ -19,6 +20,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
+import javafx.scene.transform.Scale;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.converter.NumberStringConverter;
@@ -93,6 +95,10 @@ public class Main extends Application {
     @FXML
     private Pane colorView;
     @FXML
+    private ScrollPane scrollPane;
+    @FXML
+    private AnchorPane scrollAnchor;
+    @FXML
     private HBox canvasBox;
     @FXML
     private Canvas canvas;
@@ -112,6 +118,7 @@ public class Main extends Application {
     private boolean unsavedChanges;
     // Start coordinates of the drawn shape
     private Point startCoords;
+    private int scrollCount;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -138,6 +145,8 @@ public class Main extends Application {
         ellipse = (ToggleButton) loader.getNamespace().get("ellipse");
         rectangle = (ToggleButton) loader.getNamespace().get("rectangle");
         colorBox = (HBox) loader.getNamespace().get("colorBox");
+        scrollPane = (ScrollPane) loader.getNamespace().get("scrollPane");
+        scrollAnchor = (AnchorPane) loader.getNamespace().get("scrollAnchor");
         canvasBox = (HBox) loader.getNamespace().get("canvasBox");
         RGBControls = (HBox) loader.getNamespace().get("RGBControls");
         redSlider = (Slider) loader.getNamespace().get("redSlider");
@@ -192,10 +201,9 @@ public class Main extends Application {
                 if(!eyedropper.isSelected()){
                     changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
                     gc.setStroke(currentPaint);
+                    gc.setLineWidth(1);
                     if(brush.isSelected() || eraser.isSelected()){
-                        if(brush.isSelected()){
-                            gc.setLineWidth(1);
-                        }else{
+                        if(eraser.isSelected()){
                             gc.setLineWidth(10);
                             gc.setStroke(Color.WHITE);
                         }
@@ -293,8 +301,12 @@ public class Main extends Application {
         toolBox.prefWidthProperty().bind(Bindings.divide(mainBox.prefWidthProperty(),2));
         toolBar.prefWidthProperty().bind(toolBox.prefWidthProperty());
         colorBox.prefWidthProperty().bind(Bindings.divide(mainBox.prefWidthProperty(),2));
-        canvasBox.prefWidthProperty().bind(primaryStage.widthProperty());
-        canvasBox.prefHeightProperty().bind(anchorPane.heightProperty().subtract(menuBar.heightProperty()).subtract(mainBox.heightProperty()));
+        scrollPane.prefWidthProperty().bind(anchorPane.widthProperty());
+        scrollPane.prefHeightProperty().bind(anchorPane.heightProperty().subtract(menuBar.heightProperty()).subtract(mainBox.heightProperty()));
+        scrollAnchor.prefWidthProperty().bind(scrollPane.prefWidthProperty());
+        scrollAnchor.prefHeightProperty().bind(scrollPane.prefHeightProperty());
+        canvasBox.prefWidthProperty().bind(scrollAnchor.prefWidthProperty());
+        canvasBox.prefHeightProperty().bind(scrollAnchor.prefHeightProperty());
         colorDisplay.prefWidthProperty().bind(colorBox.prefWidthProperty().subtract(RGBControls.prefWidthProperty()));
         // Undo/redo functionality
         undo.setOnAction(event -> undo());
@@ -304,6 +316,29 @@ public class Main extends Application {
         open.setOnAction(event -> open(primaryStage));
         save.setOnAction(event -> save(primaryStage));
         primaryStage.setOnCloseRequest(event -> handleCloseRequest(primaryStage, event));
+        // Zoom in and out
+        scrollAnchor.setOnScroll(event -> {
+            double zoomFactor = 0;
+            if(event.getDeltaY() < 0){
+                if(scrollCount >= -20){
+                    zoomFactor = 0.95;
+                    scrollCount--;
+                }
+            }else{
+                if(scrollCount <= 20) {
+                    zoomFactor = 1.05;
+                    scrollCount++;
+                }
+            }
+            if(scrollCount >= -20 && scrollCount <= 20){
+                Scale scale = new Scale();
+                scale.setPivotX(event.getX());
+                scale.setPivotY(event.getY());
+                scale.setX(canvasBox.getScaleX()*zoomFactor);
+                scale.setY(canvasBox.getScaleY()*zoomFactor);
+                canvasBox.getTransforms().add(scale);
+            }
+        });
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
         primaryStage.show();
     }
@@ -402,6 +437,8 @@ public class Main extends Application {
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         changeList.clear();
         currentIdx = 0;
+        scrollCount = 0;
+        canvasBox.getTransforms().clear();
         changeList.add(takeSnapshot());
         fileName = "Untitled.png";
         stage.setTitle(String.format("%s - PaintingApp", fileName));

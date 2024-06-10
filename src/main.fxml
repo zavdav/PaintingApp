@@ -6,6 +6,7 @@
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Slider?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleButton?>
@@ -231,10 +232,17 @@
             </HBox>
          </children>
       </HBox>
-      <HBox fx:id="canvasBox" alignment="CENTER" layoutY="133.0" prefHeight="347.0" prefWidth="854.0">
-         <children>
-            <Canvas fx:id="canvas" height="300.0" width="600.0" />
-         </children>
-      </HBox>
+      <ScrollPane fx:id="scrollPane" layoutY="130.0" prefHeight="347.0" prefWidth="854.0">
+        <content>
+          <AnchorPane fx:id="scrollAnchor" layoutY="130.0" minHeight="0.0" minWidth="0.0" prefHeight="347.0" prefWidth="854.0">
+               <children>
+                  <HBox fx:id="canvasBox" alignment="CENTER" prefHeight="347.0" prefWidth="854.0">
+                     <children>
+                        <Canvas fx:id="canvas" height="300.0" width="600.0" />
+                     </children>
+                  </HBox>
+               </children></AnchorPane>
+        </content>
+      </ScrollPane>
    </children>
 </AnchorPane>
