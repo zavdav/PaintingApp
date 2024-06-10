@@ -121,6 +121,8 @@ public class Main extends Application {
     // Start coordinates of the drawn shape
     private Point startCoords;
     private int scrollCount;
+    private double resizeWidth;
+    private double resizeHeight;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -241,9 +243,11 @@ public class Main extends Application {
                     }else if(ellipse.isSelected()){
                         initDrawShape(event);
                         drawEllipse(event);
-                    }else{
+                    }else if(ellipse.isSelected()){
                         initDrawShape(event);
                         drawRectangle(event);
+                    }else{
+                        resize(event);
                     }
                 }else{
                     eyedropperSetColor(event);
@@ -265,6 +269,8 @@ public class Main extends Application {
                             drawEllipse(event);
                         }else if(rectangle.isSelected()){
                             drawRectangle(event);
+                        }else if(resize.isSelected()){
+                            resize(event);
                         }
                     }else{
                         eyedropperSetColor(event);
@@ -662,6 +668,7 @@ public class Main extends Application {
     public void initDrawShape(MouseEvent event){
         startCoords = new Point((int) event.getX(), (int) event.getY());
     }
+    // Set the resize cursor according to cursor position
     public void changeResizeCursor(MouseEvent event, Scene scene){
         if(event.getEventType() == MouseEvent.MOUSE_MOVED){
             Point coords = new Point((int) event.getX(), (int) event.getY());
@@ -689,9 +696,51 @@ public class Main extends Application {
             scene.setCursor(currentCursor);
         }
     }
-    // Adjust the canvas size
+    // Change the canvas size
     public void resize(MouseEvent event){
-
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED){
+            resizeWidth = canvas.getWidth();
+            resizeHeight = canvas.getHeight();
+        }
+        if(event.getEventType() == MouseEvent.MOUSE_DRAGGED){
+            if(currentCursor == Cursor.W_RESIZE){
+                canvas.setWidth(canvas.getWidth()-Math.round(event.getX()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), canvas.getWidth()-resizeWidth, 0);
+            }else if(currentCursor == Cursor.N_RESIZE){
+                canvas.setHeight(canvas.getHeight()-Math.round(event.getY()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), 0, canvas.getHeight()-resizeHeight);
+            }else if(currentCursor == Cursor.E_RESIZE){
+                canvas.setWidth(Math.round(event.getX()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), 0, 0);
+            }else if(currentCursor == Cursor.S_RESIZE){
+                canvas.setHeight(Math.round(event.getY()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), 0, 0);
+            }else if(currentCursor == Cursor.NW_RESIZE){
+                canvas.setWidth(canvas.getWidth()-Math.round(event.getX()));
+                canvas.setHeight(canvas.getHeight()-Math.round(event.getY()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), canvas.getWidth()-resizeWidth, canvas.getHeight()-resizeHeight);
+            }else if(currentCursor == Cursor.NE_RESIZE){
+                canvas.setWidth(Math.round(event.getX()));
+                canvas.setHeight(canvas.getHeight()-Math.round(event.getY()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), 0, canvas.getHeight()-resizeHeight);
+            }else if(currentCursor == Cursor.SW_RESIZE){
+                canvas.setWidth(canvas.getWidth()-Math.round(event.getX()));
+                canvas.setHeight(Math.round(event.getY()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), canvas.getWidth()-resizeWidth, 0);
+            }else if(currentCursor == Cursor.SE_RESIZE){
+                canvas.setWidth(Math.round(event.getX()));
+                canvas.setHeight(Math.round(event.getY()));
+                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                gc.drawImage(changeList.get(currentIdx), 0, 0);
+            }
+        }
     }
 
     public static void main(String[] args) {
