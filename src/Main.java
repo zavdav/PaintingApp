@@ -2,6 +2,7 @@ import javafx.beans.binding.*;
 import javafx.application.Application;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
@@ -120,9 +121,13 @@ public class Main extends Application {
     private boolean unsavedChanges;
     // Start coordinates of the drawn shape
     private Point startCoords;
+    // Limits zooming in and out
     private int scrollCount;
+    // Canvas width before resizing
     private double resizeWidth;
+    // Canvas height before resizing
     private double resizeHeight;
+    private EventHandler<MouseEvent> changeToDefaultCursor;
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -201,21 +206,33 @@ public class Main extends Application {
         addToolCursor(line, Cursor.CROSSHAIR);
         addToolCursor(ellipse, Cursor.CROSSHAIR);
         addToolCursor(rectangle, Cursor.CROSSHAIR);
-        canvasBox.setOnMouseExited(event -> scene.setCursor(Cursor.DEFAULT));
-        canvasBox.setOnMouseEntered(event -> {
+        addToolCursor(resize, Cursor.DEFAULT);
+        menuBar.setOnMouseEntered(event -> scene.setCursor(Cursor.DEFAULT));
+        mainBox.setOnMouseEntered(event -> scene.setCursor(Cursor.DEFAULT));
+        scrollAnchor.setOnMouseEntered(event -> {
             if(resize.isSelected()){
-                scene.setCursor(Cursor.DEFAULT);
+                if(scene.getCursor() != Cursor.NW_RESIZE &&
+                scene.getCursor() != Cursor.NE_RESIZE &&
+                scene.getCursor() != Cursor.SW_RESIZE &&
+                scene.getCursor() != Cursor.SE_RESIZE &&
+                scene.getCursor() != Cursor.N_RESIZE &&
+                scene.getCursor() != Cursor.E_RESIZE &&
+                scene.getCursor() != Cursor.S_RESIZE &&
+                scene.getCursor() != Cursor.W_RESIZE){
+                    scene.setCursor(Cursor.DEFAULT);
+                }
             }else{
                 scene.setCursor(currentCursor);
             }
         });
-        canvas.setOnMouseExited(event -> {
-            if(resize.isSelected()){
+        changeToDefaultCursor = event -> {
+            if (resize.isSelected()) {
                 scene.setCursor(Cursor.DEFAULT);
-            }else{
+            } else {
                 scene.setCursor(currentCursor);
             }
-        });
+        };
+        canvas.setOnMouseExited(changeToDefaultCursor);
         canvas.addEventHandler(MouseEvent.MOUSE_MOVED, event -> {
             if(resize.isSelected()){
                 changeResizeCursor(event, scene);
@@ -243,7 +260,7 @@ public class Main extends Application {
                     }else if(ellipse.isSelected()){
                         initDrawShape(event);
                         drawEllipse(event);
-                    }else if(ellipse.isSelected()){
+                    }else if(rectangle.isSelected()){
                         initDrawShape(event);
                         drawRectangle(event);
                     }else{
@@ -284,6 +301,8 @@ public class Main extends Application {
                         gc.lineTo(event.getX(), event.getY());
                         gc.stroke();
                         gc.closePath();
+                    }else if(resize.isSelected()){
+                        resize(event);
                     }
                     changeList.add(takeSnapshot());
                     currentIdx++;
@@ -699,6 +718,7 @@ public class Main extends Application {
     // Change the canvas size
     public void resize(MouseEvent event){
         if(event.getEventType() == MouseEvent.MOUSE_PRESSED){
+            canvas.setOnMouseExited(null);
             resizeWidth = canvas.getWidth();
             resizeHeight = canvas.getHeight();
         }
@@ -740,6 +760,10 @@ public class Main extends Application {
                 gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
                 gc.drawImage(changeList.get(currentIdx), 0, 0);
             }
+        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
+            canvas.setOnMouseExited(changeToDefaultCursor);
+            System.out.println(changeToDefaultCursor);
+            System.out.println(canvas.getOnMouseExited());
         }
     }
 
