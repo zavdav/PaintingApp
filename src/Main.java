@@ -255,78 +255,83 @@ public class Main extends Application {
             }
             lblCursorPos.setText(String.format("Pos: %.0f, %.0fpx", Math.floor(event.getX()), Math.floor(event.getY())));
         });
-        canvas.widthProperty().addListener((observable, oldValue, newValue) ->
-                lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight())));
-        canvas.heightProperty().addListener((observable, oldValue, newValue) ->
-                lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight())));
-        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
-            event -> {
+        canvas.widthProperty().addListener((observable, oldValue, newValue) -> {
+            if((double) newValue < 1){
+                canvas.setWidth((double) oldValue);
+            }
+            lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight()));
+        });
+        canvas.heightProperty().addListener((observable, oldValue, newValue) -> {
+            if((double) newValue < 1){
+                canvas.setHeight((double) oldValue);
+            }
+            lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight()));
+        });
+        canvas.addEventHandler(MouseEvent.MOUSE_PRESSED, event -> {
+            if(!eyedropper.isSelected()){
+                changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
+                gc.setStroke(currentPaint);
+                gc.setLineWidth(1);
+                if(brush.isSelected() || eraser.isSelected()){
+                    if(eraser.isSelected()){
+                        gc.setLineWidth(10);
+                        gc.setStroke(Color.WHITE);
+                    }
+                    gc.beginPath();
+                    gc.moveTo(event.getX(), event.getY());
+                    gc.stroke();
+                }else if(paintBucket.isSelected()){
+                    floodFill((int) event.getX(), (int) event.getY(), (Color) currentPaint);
+                }else if(line.isSelected()){
+                    drawLine(event);
+                }else if(ellipse.isSelected()){
+                    drawEllipse(event);
+                }else if(rectangle.isSelected()){
+                    drawRectangle(event);
+                }else{
+                    resize(event);
+                }
+            }else{
+                eyedropperSetColor(event);
+            }
+        });
+        canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED, event -> {
+            if(!paintBucket.isSelected()){
                 if(!eyedropper.isSelected()){
-                    changeList =  new ArrayList<>(changeList.subList(0, currentIdx+1));
-                    gc.setStroke(currentPaint);
-                    gc.setLineWidth(1);
                     if(brush.isSelected() || eraser.isSelected()){
-                        if(eraser.isSelected()){
-                            gc.setLineWidth(10);
-                            gc.setStroke(Color.WHITE);
-                        }
+                        gc.lineTo(event.getX(), event.getY());
+                        gc.stroke();
+                        gc.closePath();
                         gc.beginPath();
                         gc.moveTo(event.getX(), event.getY());
-                        gc.stroke();
-                    }else if(paintBucket.isSelected()){
-                        floodFill((int) event.getX(), (int) event.getY(), (Color) currentPaint);
                     }else if(line.isSelected()){
                         drawLine(event);
                     }else if(ellipse.isSelected()){
                         drawEllipse(event);
                     }else if(rectangle.isSelected()){
                         drawRectangle(event);
-                    }else{
+                    }else if(resize.isSelected()){
                         resize(event);
                     }
                 }else{
                     eyedropperSetColor(event);
                 }
-            });
-        canvas.addEventHandler(MouseEvent.MOUSE_DRAGGED,
-            event -> {
-                if(!paintBucket.isSelected()){
-                    if(!eyedropper.isSelected()){
-                        if(brush.isSelected() || eraser.isSelected()){
-                            gc.lineTo(event.getX(), event.getY());
-                            gc.stroke();
-                            gc.closePath();
-                            gc.beginPath();
-                            gc.moveTo(event.getX(), event.getY());
-                        }else if(line.isSelected()){
-                            drawLine(event);
-                        }else if(ellipse.isSelected()){
-                            drawEllipse(event);
-                        }else if(rectangle.isSelected()){
-                            drawRectangle(event);
-                        }else if(resize.isSelected()){
-                            resize(event);
-                        }
-                    }else{
-                        eyedropperSetColor(event);
-                    }
+            }
+        });
+        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED, event -> {
+            if(!eyedropper.isSelected()){
+                if(brush.isSelected() || eraser.isSelected()){
+                    gc.lineTo(event.getX(), event.getY());
+                    gc.stroke();
+                    gc.closePath();
+                }else if(resize.isSelected()){
+                    resize(event);
                 }
-            });
-        canvas.addEventHandler(MouseEvent.MOUSE_RELEASED,
-            event -> {
-                if(!eyedropper.isSelected()){
-                    if(brush.isSelected() || eraser.isSelected()){
-                        gc.lineTo(event.getX(), event.getY());
-                        gc.stroke();
-                        gc.closePath();
-                    }else if(resize.isSelected()){
-                        resize(event);
-                    }
-                    changeList.add(takeSnapshot());
-                    currentIdx++;
-                    unsavedChanges = true;
-                }
-            });
+                changeList.add(takeSnapshot());
+                currentIdx++;
+                unsavedChanges = true;
+            }
+        });
         // Color selection + binding of Sliders and TextBoxes
         currentPaint = Color.web("#000000");
         colorView.setStyle("-fx-background-color:#000000");
@@ -711,31 +716,29 @@ public class Main extends Application {
     }
     // Set the resize cursor according to cursor position
     public void changeResizeCursor(MouseEvent event, Scene scene){
-        if(event.getEventType() == MouseEvent.MOUSE_MOVED){
-            Point coords = new Point((int) event.getX(), (int) event.getY());
-            int width = (int) canvas.getWidth();
-            int height = (int) canvas.getHeight();
-            if(coords.x >= 0 && coords.x <= 10 && coords.y >= 0 && coords.y <= 10){
-                currentCursor = Cursor.NW_RESIZE;
-            }else if(coords.x >= width-10 && coords.x <= width && coords.y >= 0 && coords.y <= 10){
-                currentCursor = Cursor.NE_RESIZE;
-            }else if(coords.x >= 0 && coords.x <= 10 && coords.y >= height-10 && coords.y <= height){
-                currentCursor = Cursor.SW_RESIZE;
-            }else if(coords.x >= width-10 && coords.x <= width && coords.y >= height-10 && coords.y <= height){
-                currentCursor = Cursor.SE_RESIZE;
-            }else if(coords.x >= 0 && coords.x <= 10){
-                currentCursor = Cursor.W_RESIZE;
-            }else if(coords.x >= width-10 && coords.x <= width){
-                currentCursor = Cursor.E_RESIZE;
-            }else if(coords.y >= 0 && coords.y <= 10){
-                currentCursor = Cursor.N_RESIZE;
-            }else if(coords.y >= height-10 && coords.y <= height){
-                currentCursor = Cursor.S_RESIZE;
-            }else{
-                currentCursor = Cursor.DEFAULT;
-            }
-            scene.setCursor(currentCursor);
+        Point coords = new Point((int) event.getX(), (int) event.getY());
+        int width = (int) canvas.getWidth();
+        int height = (int) canvas.getHeight();
+        if(coords.x >= 0 && coords.x <= 10 && coords.y >= 0 && coords.y <= 10){
+            currentCursor = Cursor.NW_RESIZE;
+        }else if(coords.x >= width-10 && coords.x <= width && coords.y >= 0 && coords.y <= 10){
+            currentCursor = Cursor.NE_RESIZE;
+        }else if(coords.x >= 0 && coords.x <= 10 && coords.y >= height-10 && coords.y <= height){
+            currentCursor = Cursor.SW_RESIZE;
+        }else if(coords.x >= width-10 && coords.x <= width && coords.y >= height-10 && coords.y <= height){
+            currentCursor = Cursor.SE_RESIZE;
+        }else if(coords.x >= 0 && coords.x <= 10){
+            currentCursor = Cursor.W_RESIZE;
+        }else if(coords.x >= width-10 && coords.x <= width){
+            currentCursor = Cursor.E_RESIZE;
+        }else if(coords.y >= 0 && coords.y <= 10){
+            currentCursor = Cursor.N_RESIZE;
+        }else if(coords.y >= height-10 && coords.y <= height){
+            currentCursor = Cursor.S_RESIZE;
+        }else{
+            currentCursor = Cursor.DEFAULT;
         }
+        scene.setCursor(currentCursor);
     }
     // Change the canvas size
     public void resize(MouseEvent event){
@@ -744,7 +747,7 @@ public class Main extends Application {
             resizeWidth = canvas.getWidth();
             resizeHeight = canvas.getHeight();
         }
-        if(event.getEventType() == MouseEvent.MOUSE_DRAGGED){
+        else if(event.getEventType() == MouseEvent.MOUSE_DRAGGED){
             String cursor = currentCursor.toString();
             gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
             switch(cursor){
@@ -778,7 +781,7 @@ public class Main extends Application {
                     gc.drawImage(changeList.get(currentIdx), 0, 0);
                 }
             }
-        }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
+        }else{
             canvas.setOnMouseExited(changeToDefaultCursor);
         }
     }
