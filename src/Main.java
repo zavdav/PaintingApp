@@ -11,6 +11,7 @@ import javafx.scene.Cursor;
 import javafx.scene.canvas.*;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
@@ -105,6 +106,16 @@ public class Main extends Application {
     private HBox canvasBox;
     @FXML
     private Canvas canvas;
+    @FXML
+    private Pane bottomBar;
+    @FXML
+    private HBox posDisplay;
+    @FXML
+    private Label lblCursorPos;
+    @FXML
+    private HBox dimDisplay;
+    @FXML
+    private Label lblDimensions;
     // The canvas's GraphicsContext
     private GraphicsContext gc;
     // Cursor of the currently selected tool
@@ -169,6 +180,11 @@ public class Main extends Application {
         colorDisplay = (HBox) loader.getNamespace().get("colorDisplay");
         colorView = (Pane) loader.getNamespace().get("colorView");
         canvas = (Canvas) loader.getNamespace().get("canvas");
+        bottomBar = (Pane) loader.getNamespace().get("bottomBar");
+        posDisplay = (HBox) loader.getNamespace().get("posDisplay");
+        lblCursorPos = (Label) loader.getNamespace().get("lblCursorPos");
+        dimDisplay = (HBox) loader.getNamespace().get("dimDisplay");
+        lblDimensions = (Label) loader.getNamespace().get("lblDimensions");
         txtRed.setTextFormatter(colorChannelFormatter());
         txtGreen.setTextFormatter(colorChannelFormatter());
         txtBlue.setTextFormatter(colorChannelFormatter());
@@ -237,6 +253,13 @@ public class Main extends Application {
             if(resize.isSelected()){
                 changeResizeCursor(event, scene);
             }
+            lblCursorPos.setText(String.format("Pos: %.0f, %.0fpx", Math.floor(event.getX()), Math.floor(event.getY())));
+        });
+        canvas.widthProperty().addListener((observable, oldValue, newValue) -> {
+            lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight()));
+        });
+        canvas.heightProperty().addListener((observable, oldValue, newValue) -> {
+            lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight()));
         });
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
             event -> {
@@ -344,13 +367,13 @@ public class Main extends Application {
         Bindings.bindBidirectional(txtGreen.textProperty(), greenSlider.valueProperty(), new NumberStringConverter());
         Bindings.bindBidirectional(txtBlue.textProperty(), blueSlider.valueProperty(), new NumberStringConverter());
         // Binding of width and height properties, in order to fit all window sizes
-        menuBar.prefWidthProperty().bind(primaryStage.widthProperty());
-        mainBox.prefWidthProperty().bind(primaryStage.widthProperty());
+        menuBar.prefWidthProperty().bind(anchorPane.widthProperty());
+        mainBox.prefWidthProperty().bind(anchorPane.widthProperty());
         toolBox.prefWidthProperty().bind(Bindings.divide(mainBox.prefWidthProperty(),2));
         toolBar.prefWidthProperty().bind(toolBox.prefWidthProperty());
         colorBox.prefWidthProperty().bind(Bindings.divide(mainBox.prefWidthProperty(),2));
         scrollPane.prefWidthProperty().bind(anchorPane.widthProperty());
-        scrollPane.prefHeightProperty().bind(anchorPane.heightProperty().subtract(menuBar.heightProperty()).subtract(mainBox.heightProperty()));
+        scrollPane.prefHeightProperty().bind(anchorPane.heightProperty().subtract(menuBar.heightProperty()).subtract(mainBox.heightProperty()).subtract(bottomBar.heightProperty()));
         scrollAnchor.prefWidthProperty().bind(scrollPane.prefWidthProperty());
         scrollAnchor.prefHeightProperty().bind(scrollPane.prefHeightProperty());
         canvasBox.prefWidthProperty().bind(scrollAnchor.prefWidthProperty());
@@ -762,8 +785,6 @@ public class Main extends Application {
             }
         }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
             canvas.setOnMouseExited(changeToDefaultCursor);
-            System.out.println(changeToDefaultCursor);
-            System.out.println(canvas.getOnMouseExited());
         }
     }
 
