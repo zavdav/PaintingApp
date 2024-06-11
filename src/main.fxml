@@ -253,7 +253,7 @@
                </children></AnchorPane>
         </content>
       </ScrollPane>
-      <Pane fx:id="bottomBar" layoutY="480.0" prefHeight="15.0" prefWidth="854.0">
+      <HBox fx:id="bottomBar" layoutY="480.0" prefHeight="15.0" prefWidth="854.0">
          <children>
             <HBox fx:id="posDisplay" prefHeight="15.0" prefWidth="427.0">
                <children>
@@ -280,6 +280,6 @@
                </children>
             </HBox>
          </children>
-      </Pane>
+      </HBox>
    </children>
 </AnchorPane>
