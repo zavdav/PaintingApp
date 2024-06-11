@@ -195,22 +195,12 @@ public class Main extends Application {
         gc.setImageSmoothing(false);
         initCanvas(primaryStage);
         ToggleGroup toggleGroup = new ToggleGroup();
-        brush.setToggleGroup(toggleGroup);
-        eraser.setToggleGroup(toggleGroup);
-        paintBucket.setToggleGroup(toggleGroup);
-        eyedropper.setToggleGroup(toggleGroup);
-        line.setToggleGroup(toggleGroup);
-        ellipse.setToggleGroup(toggleGroup);
-        rectangle.setToggleGroup(toggleGroup);
-        resize.setToggleGroup(toggleGroup);
-        addSelectionEventFilter(brush);
-        addSelectionEventFilter(eraser);
-        addSelectionEventFilter(eyedropper);
-        addSelectionEventFilter(paintBucket);
-        addSelectionEventFilter(line);
-        addSelectionEventFilter(ellipse);
-        addSelectionEventFilter(rectangle);
-        addSelectionEventFilter(resize);
+        toolBar.getItems().forEach(toggle -> {
+            if(toggle instanceof ToggleButton){
+                ((ToggleButton) toggle).setToggleGroup(toggleGroup);
+                addSelectionEventFilter((ToggleButton) toggle);
+            }
+        });
         toggleGroup.selectToggle(brush);
         brush.selectedProperty().set(true);
         currentCursor = new ImageCursor(new Image("resources/images/cursor_brush.png"));
@@ -226,17 +216,8 @@ public class Main extends Application {
         menuBar.setOnMouseEntered(event -> scene.setCursor(Cursor.DEFAULT));
         mainBox.setOnMouseEntered(event -> scene.setCursor(Cursor.DEFAULT));
         scrollAnchor.setOnMouseEntered(event -> {
-            if(resize.isSelected()){
-                if(scene.getCursor() != Cursor.NW_RESIZE &&
-                scene.getCursor() != Cursor.NE_RESIZE &&
-                scene.getCursor() != Cursor.SW_RESIZE &&
-                scene.getCursor() != Cursor.SE_RESIZE &&
-                scene.getCursor() != Cursor.N_RESIZE &&
-                scene.getCursor() != Cursor.E_RESIZE &&
-                scene.getCursor() != Cursor.S_RESIZE &&
-                scene.getCursor() != Cursor.W_RESIZE){
+            if(resize.isSelected() && !scene.getCursor().toString().contains("_RESIZE")){
                     scene.setCursor(Cursor.DEFAULT);
-                }
             }else{
                 scene.setCursor(currentCursor);
             }
@@ -344,25 +325,9 @@ public class Main extends Application {
                 colorView.setStyle("-fx-background-color:#"+txtHex.getText());
             }
         });
-        redSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            redSlider.setValue(Math.floor((Double) newValue));
-            txtRed.setText(String.valueOf((int) Math.floor((Double) newValue)));
-            txtHex.setText(String.format("%02X", redSlider.valueProperty().intValue())+
-                    txtHex.getText(2,6));
-        });
-        greenSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            greenSlider.setValue(Math.floor((Double) newValue));
-            txtGreen.setText(String.valueOf((int) Math.floor((Double) newValue)));
-            txtHex.setText(txtHex.getText(0,2)+
-                    String.format("%02X", greenSlider.valueProperty().intValue())+
-                    txtHex.getText(4,6));
-        });
-        blueSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            blueSlider.setValue(Math.floor((Double) newValue));
-            txtBlue.setText(String.valueOf((int) Math.floor((Double) newValue)));
-            txtHex.setText(txtHex.getText(0,4)+
-                    String.format("%02X", blueSlider.valueProperty().intValue()));
-        });
+        addSliderBindings(redSlider, txtRed);
+        addSliderBindings(greenSlider, txtGreen);
+        addSliderBindings(blueSlider, txtBlue);
         Bindings.bindBidirectional(txtRed.textProperty(), redSlider.valueProperty(), new NumberStringConverter());
         Bindings.bindBidirectional(txtGreen.textProperty(), greenSlider.valueProperty(), new NumberStringConverter());
         Bindings.bindBidirectional(txtBlue.textProperty(), blueSlider.valueProperty(), new NumberStringConverter());
@@ -458,6 +423,21 @@ public class Main extends Application {
             if(toggleButton.isSelected()){
                 event.consume();
             }
+        });
+    }
+    public void addSliderBindings(Slider slider, TextField textField){
+        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            slider.setValue(Math.floor((Double) newValue));
+            textField.setText(String.valueOf((int) Math.floor((Double) newValue)));
+            String value;
+            if(slider == redSlider){
+                value = String.format("%02X", redSlider.valueProperty().intValue())+txtHex.getText(2,6);
+            }else if(slider == greenSlider){
+                value = txtHex.getText(0,2)+String.format("%02X", greenSlider.valueProperty().intValue())+txtHex.getText(4,6);
+            }else{
+                value = txtHex.getText(0,4)+String.format("%02X", blueSlider.valueProperty().intValue());
+            }
+            txtHex.setText(value);
         });
     }
     // Take a snapshot of the current state of the canvas
