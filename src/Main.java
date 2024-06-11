@@ -242,9 +242,9 @@ public class Main extends Application {
             }
         });
         changeToDefaultCursor = event -> {
-            if (resize.isSelected()) {
+            if(resize.isSelected()){
                 scene.setCursor(Cursor.DEFAULT);
-            } else {
+            }else{
                 scene.setCursor(currentCursor);
             }
         };
@@ -255,12 +255,10 @@ public class Main extends Application {
             }
             lblCursorPos.setText(String.format("Pos: %.0f, %.0fpx", Math.floor(event.getX()), Math.floor(event.getY())));
         });
-        canvas.widthProperty().addListener((observable, oldValue, newValue) -> {
-            lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight()));
-        });
-        canvas.heightProperty().addListener((observable, oldValue, newValue) -> {
-            lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight()));
-        });
+        canvas.widthProperty().addListener((observable, oldValue, newValue) ->
+                lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight())));
+        canvas.heightProperty().addListener((observable, oldValue, newValue) ->
+                lblDimensions.setText(String.format("%d x %dpx", (int) canvas.getWidth(), (int) canvas.getHeight())));
         canvas.addEventHandler(MouseEvent.MOUSE_PRESSED,
             event -> {
                 if(!eyedropper.isSelected()){
@@ -278,13 +276,10 @@ public class Main extends Application {
                     }else if(paintBucket.isSelected()){
                         floodFill((int) event.getX(), (int) event.getY(), (Color) currentPaint);
                     }else if(line.isSelected()){
-                        initDrawShape(event);
                         drawLine(event);
                     }else if(ellipse.isSelected()){
-                        initDrawShape(event);
                         drawEllipse(event);
                     }else if(rectangle.isSelected()){
-                        initDrawShape(event);
                         drawRectangle(event);
                     }else{
                         resize(event);
@@ -379,6 +374,11 @@ public class Main extends Application {
         canvasBox.prefWidthProperty().bind(scrollAnchor.prefWidthProperty());
         canvasBox.prefHeightProperty().bind(scrollAnchor.prefHeightProperty());
         colorDisplay.prefWidthProperty().bind(colorBox.prefWidthProperty().subtract(RGBControls.prefWidthProperty()));
+        bottomBar.prefWidthProperty().bind(anchorPane.widthProperty());
+        anchorPane.heightProperty().addListener((observable, oldValue, newValue) ->
+                bottomBar.setLayoutY(anchorPane.getHeight()-15));
+        posDisplay.prefWidthProperty().bind(Bindings.divide(bottomBar.prefWidthProperty(), 2));
+        dimDisplay.prefWidthProperty().bind(Bindings.divide(bottomBar.prefWidthProperty(), 2));
         // Undo/redo functionality
         undo.setOnAction(event -> undo());
         redo.setOnAction(event -> redo());
@@ -396,7 +396,7 @@ public class Main extends Application {
                     scrollCount--;
                 }
             }else{
-                if(scrollCount <= 20) {
+                if(scrollCount <= 20){
                     zoomFactor = 1.05;
                     scrollCount++;
                 }
@@ -418,9 +418,9 @@ public class Main extends Application {
         Pattern hexPattern = Pattern.compile("[0-9a-fA-F]*");
         UnaryOperator<TextFormatter.Change> filter = change -> {
             String newText = change.getControlNewText();
-            if(hexPattern.matcher(newText).matches() && newText.length() <= 6) {
+            if(hexPattern.matcher(newText).matches() && newText.length() <= 6){
                 return change;
-            } else{
+            }else{
                 return null;
             }
         };
@@ -433,7 +433,7 @@ public class Main extends Application {
             String newText = change.getControlNewText();
             if(colorChannelPattern.matcher(newText).matches() && newText.length() <= 3){
                 return change;
-            } else{
+            }else{
                 return null;
             }
         };
@@ -574,7 +574,7 @@ public class Main extends Application {
                 stage.setTitle(String.format("%s - PaintingApp", fileName));
                 unsavedChanges = false;
                 fileSaved = true;
-            } catch (IOException e) {
+            }catch(IOException e){
                 throw new RuntimeException(e);
             }
         }
@@ -681,34 +681,33 @@ public class Main extends Application {
     }
     // Draws a line
     public void drawLine(MouseEvent event){
-        if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            gc.drawImage(changeList.get(currentIdx),0,0);
-            gc.strokeLine(startCoords.x, startCoords.y, event.getX(), event.getY());
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED){
+            startCoords = new Point((int) event.getX(), (int) event.getY());
         }
+        gc.drawImage(changeList.get(currentIdx),0,0);
+        gc.strokeLine(startCoords.x, startCoords.y, event.getX(), event.getY());
     }
     // Draws an ellipse
     public void drawEllipse(MouseEvent event){
-        if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            gc.drawImage(changeList.get(currentIdx),0,0);
-            gc.strokeOval(Math.min(startCoords.x, event.getX()),
-                    Math.min(startCoords.y, event.getY()),
-                    Math.abs(startCoords.x-event.getX()),
-                    Math.abs(startCoords.y-event.getY()));
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED){
+            startCoords = new Point((int) event.getX(), (int) event.getY());
         }
+        gc.drawImage(changeList.get(currentIdx),0,0);
+        gc.strokeOval(Math.min(startCoords.x, event.getX()),
+                Math.min(startCoords.y, event.getY()),
+                Math.abs(startCoords.x-event.getX()),
+                Math.abs(startCoords.y-event.getY()));
     }
     // Draws a rectangle
     public void drawRectangle(MouseEvent event){
-        if(event.getEventType() == MouseEvent.MOUSE_PRESSED || event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            gc.drawImage(changeList.get(currentIdx),0,0);
-            gc.strokeRect(Math.min(startCoords.x, event.getX()),
-                    Math.min(startCoords.y, event.getY()),
-                    Math.abs(startCoords.x-event.getX()),
-                    Math.abs(startCoords.y-event.getY()));
+        if(event.getEventType() == MouseEvent.MOUSE_PRESSED){
+            startCoords = new Point((int) event.getX(), (int) event.getY());
         }
-    }
-    // Set start coordinates
-    public void initDrawShape(MouseEvent event){
-        startCoords = new Point((int) event.getX(), (int) event.getY());
+        gc.drawImage(changeList.get(currentIdx),0,0);
+        gc.strokeRect(Math.min(startCoords.x, event.getX()),
+                Math.min(startCoords.y, event.getY()),
+                Math.abs(startCoords.x-event.getX()),
+                Math.abs(startCoords.y-event.getY()));
     }
     // Set the resize cursor according to cursor position
     public void changeResizeCursor(MouseEvent event, Scene scene){
@@ -746,49 +745,45 @@ public class Main extends Application {
             resizeHeight = canvas.getHeight();
         }
         if(event.getEventType() == MouseEvent.MOUSE_DRAGGED){
-            if(currentCursor == Cursor.W_RESIZE){
-                canvas.setWidth(canvas.getWidth()-Math.round(event.getX()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), canvas.getWidth()-resizeWidth, 0);
-            }else if(currentCursor == Cursor.N_RESIZE){
-                canvas.setHeight(canvas.getHeight()-Math.round(event.getY()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), 0, canvas.getHeight()-resizeHeight);
-            }else if(currentCursor == Cursor.E_RESIZE){
-                canvas.setWidth(Math.round(event.getX()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), 0, 0);
-            }else if(currentCursor == Cursor.S_RESIZE){
-                canvas.setHeight(Math.round(event.getY()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), 0, 0);
-            }else if(currentCursor == Cursor.NW_RESIZE){
-                canvas.setWidth(canvas.getWidth()-Math.round(event.getX()));
-                canvas.setHeight(canvas.getHeight()-Math.round(event.getY()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), canvas.getWidth()-resizeWidth, canvas.getHeight()-resizeHeight);
-            }else if(currentCursor == Cursor.NE_RESIZE){
-                canvas.setWidth(Math.round(event.getX()));
-                canvas.setHeight(canvas.getHeight()-Math.round(event.getY()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), 0, canvas.getHeight()-resizeHeight);
-            }else if(currentCursor == Cursor.SW_RESIZE){
-                canvas.setWidth(canvas.getWidth()-Math.round(event.getX()));
-                canvas.setHeight(Math.round(event.getY()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), canvas.getWidth()-resizeWidth, 0);
-            }else if(currentCursor == Cursor.SE_RESIZE){
-                canvas.setWidth(Math.round(event.getX()));
-                canvas.setHeight(Math.round(event.getY()));
-                gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-                gc.drawImage(changeList.get(currentIdx), 0, 0);
+            String cursor = currentCursor.toString();
+            gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+            switch(cursor){
+                case "W_RESIZE" -> {
+                    canvas.setWidth(canvas.getWidth() - Math.round(event.getX()));
+                    gc.drawImage(changeList.get(currentIdx), canvas.getWidth() - resizeWidth, 0);
+                } case "N_RESIZE" -> {
+                    canvas.setHeight(canvas.getHeight() - Math.round(event.getY()));
+                    gc.drawImage(changeList.get(currentIdx), 0, canvas.getHeight() - resizeHeight);
+                } case "E_RESIZE" -> {
+                    canvas.setWidth(Math.round(event.getX()));
+                    gc.drawImage(changeList.get(currentIdx), 0, 0);
+                } case "S_RESIZE" -> {
+                    canvas.setHeight(Math.round(event.getY()));
+                    gc.drawImage(changeList.get(currentIdx), 0, 0);
+                } case "NW_RESIZE" -> {
+                    canvas.setWidth(canvas.getWidth() - Math.round(event.getX()));
+                    canvas.setHeight(canvas.getHeight() - Math.round(event.getY()));
+                    gc.drawImage(changeList.get(currentIdx), canvas.getWidth() - resizeWidth, canvas.getHeight() - resizeHeight);
+                } case "NE_RESIZE" -> {
+                    canvas.setWidth(Math.round(event.getX()));
+                    canvas.setHeight(canvas.getHeight() - Math.round(event.getY()));
+                    gc.drawImage(changeList.get(currentIdx), 0, canvas.getHeight() - resizeHeight);
+                } case "SW_RESIZE" -> {
+                    canvas.setWidth(canvas.getWidth() - Math.round(event.getX()));
+                    canvas.setHeight(Math.round(event.getY()));
+                    gc.drawImage(changeList.get(currentIdx), canvas.getWidth() - resizeWidth, 0);
+                } case "SE_RESIZE" -> {
+                    canvas.setWidth(Math.round(event.getX()));
+                    canvas.setHeight(Math.round(event.getY()));
+                    gc.drawImage(changeList.get(currentIdx), 0, 0);
+                }
             }
         }else if(event.getEventType() == MouseEvent.MOUSE_RELEASED){
             canvas.setOnMouseExited(changeToDefaultCursor);
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args){
         System.setProperty("prism.allowhidpi", "false");
         System.setProperty("glass.win.uiScale", "100%");
         System.setProperty("glass.win.renderScale", "100%");
