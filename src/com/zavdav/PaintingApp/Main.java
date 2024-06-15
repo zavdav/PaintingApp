@@ -1,3 +1,5 @@
+package com.zavdav.PaintingApp;
+
 import javafx.beans.binding.*;
 import javafx.application.Application;
 import javafx.embed.swing.SwingFXUtils;
@@ -40,7 +42,7 @@ import java.util.regex.Pattern;
 
 public class Main extends Application {
     // Definition of FXML elements to use in Java code
-    @FXML
+    /**@FXML
     private AnchorPane anchorPane;
     @FXML
     private MenuBar menuBar;
@@ -138,16 +140,20 @@ public class Main extends Application {
     private double resizeWidth;
     // Canvas height before resizing
     private double resizeHeight;
-    private EventHandler<MouseEvent> changeToDefaultCursor;
+    private EventHandler<MouseEvent> changeToDefaultCursor;*/
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("main.fxml"));
-        Parent root = loader.load();
-        Scene scene = new Scene(root);
+        Scene scene = new Scene(loader.load());
         primaryStage.setScene(scene);
+        Controller controller = loader.getController();
+        controller.initCanvas();
+        primaryStage.setOnCloseRequest(event -> controller.handleCloseRequest(event));
+        primaryStage.getIcons().add(new Image("resources/images/icon.png"));
+        primaryStage.show();
         // Injection of FXML elements
-        anchorPane = (AnchorPane) loader.getNamespace().get("anchorPane");
+        /**anchorPane = (AnchorPane) loader.getNamespace().get("anchorPane");
         menuBar = (MenuBar) loader.getNamespace().get("menuBar");
         newImg = (MenuItem) loader.getNamespace().get("newImg");
         open = (MenuItem) loader.getNamespace().get("open");
@@ -381,8 +387,9 @@ public class Main extends Application {
             }
         });
         primaryStage.getIcons().add(new Image("resources/images/icon.png"));
-        primaryStage.show();
+        primaryStage.show();*/
     }
+    /**
     // Limit input into hex code TextBox to 6-digit hexadecimal numbers
     public TextFormatter<String> hexFormatter(){
         Pattern hexPattern = Pattern.compile("[0-9a-fA-F]*");
@@ -764,7 +771,7 @@ public class Main extends Application {
         }else{
             canvas.setOnMouseExited(changeToDefaultCursor);
         }
-    }
+    }*/
 
     public static void main(String[] args){
         System.setProperty("prism.allowhidpi", "false");

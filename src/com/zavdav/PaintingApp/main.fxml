@@ -15,61 +15,81 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.input.KeyCodeCombination?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="anchorPane" prefHeight="495.0" prefWidth="854.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Main">
+<AnchorPane fx:id="anchorPane" prefHeight="495.0" prefWidth="854.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.zavdav.PaintingApp.Controller">
    <children>
-      <MenuBar fx:id="menuBar" layoutY="1.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="26.0" prefWidth="854.0">
-        <menus>
-          <Menu mnemonicParsing="false" text="File">
-            <items>
-              <MenuItem fx:id="newImg" mnemonicParsing="false" text="New">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="N" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator></MenuItem>
-                  <MenuItem fx:id="open" mnemonicParsing="false" text="Open">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="O" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator></MenuItem>
-                  <MenuItem fx:id="save" mnemonicParsing="false" text="Save">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="S" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator></MenuItem>
-            </items>
-          </Menu>
-          <Menu mnemonicParsing="false" text="Edit">
-            <items>
-              <MenuItem fx:id="undo" mnemonicParsing="false" text="Undo">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="Z" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator></MenuItem>
-                  <MenuItem fx:id="redo" mnemonicParsing="false" text="Redo">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="Y" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator></MenuItem>
-            </items>
-          </Menu>
-          <Menu mnemonicParsing="false" text="Help">
-            <items>
-              <MenuItem mnemonicParsing="false" text="About" />
-            </items>
-          </Menu>
-        </menus>
-      </MenuBar>
-      <HBox fx:id="mainBox" layoutY="27.0" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="100.0" prefWidth="854.0">
+      <GridPane prefHeight="26.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
          <children>
-            <HBox fx:id="toolBox" prefHeight="100.0" prefWidth="427.0" style="-fx-border-color: black; -fx-border-width: 0.5;">
+            <MenuBar fx:id="menuBar" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" onMouseEntered="#setDefaultCursor" prefHeight="26.0">
+              <menus>
+                <Menu mnemonicParsing="false" text="File">
+                  <items>
+                    <MenuItem fx:id="newImg" mnemonicParsing="false" onAction="#createNewImage" text="New">
+                           <accelerator>
+                              <KeyCodeCombination alt="UP" code="N" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                           </accelerator>
+                        </MenuItem>
+                        <MenuItem fx:id="open" mnemonicParsing="false" onAction="#openImage" text="Open">
+                           <accelerator>
+                              <KeyCodeCombination alt="UP" code="O" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                           </accelerator>
+                        </MenuItem>
+                        <MenuItem fx:id="save" mnemonicParsing="false" onAction="#saveImage" text="Save">
+                           <accelerator>
+                              <KeyCodeCombination alt="UP" code="S" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                           </accelerator>
+                        </MenuItem>
+                  </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Edit">
+                  <items>
+                    <MenuItem fx:id="undo" mnemonicParsing="false" onAction="#undo" text="Undo">
+                           <accelerator>
+                              <KeyCodeCombination alt="UP" code="Z" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                           </accelerator>
+                        </MenuItem>
+                        <MenuItem fx:id="redo" mnemonicParsing="false" onAction="#redo" text="Redo">
+                           <accelerator>
+                              <KeyCodeCombination alt="UP" code="Y" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+                           </accelerator>
+                        </MenuItem>
+                  </items>
+                </Menu>
+              </menus>
+            </MenuBar>
+         </children>
+      </GridPane>
+      <GridPane fx:id="mainBox" layoutY="27.0" onMouseEntered="#setDefaultCursor" prefHeight="100.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
+         <children>
+            <HBox fx:id="toolBox" prefHeight="100.0" GridPane.hgrow="SOMETIMES">
                <children>
-                  <ToolBar fx:id="toolBar" prefHeight="50.0" prefWidth="427.0">
+                  <ToolBar fx:id="toolBar" prefHeight="50.0" HBox.hgrow="ALWAYS">
                     <items>
                         <ToggleButton fx:id="brush" mnemonicParsing="false">
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/brush.png" />
+                                    <Image url="@../../../resources/images/brush.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -78,7 +98,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/eraser.png" />
+                                    <Image url="@../../../resources/images/eraser.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -87,7 +107,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/paint-bucket.png" />
+                                    <Image url="@../../../resources/images/paint-bucket.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -96,7 +116,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/eyedropper.png" />
+                                    <Image url="@../../../resources/images/eyedropper.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -105,7 +125,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/line.png" />
+                                    <Image url="@../../../resources/images/line.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -114,7 +134,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/circle.png" />
+                                    <Image url="@../../../resources/images/circle.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -123,7 +143,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/rectangle.png" />
+                                    <Image url="@../../../resources/images/rectangle.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -132,7 +152,7 @@
                            <graphic>
                               <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                                  <image>
-                                    <Image url="@resources/images/resize.png" />
+                                    <Image url="@../../../resources/images/resize.png" />
                                  </image>
                               </ImageView>
                            </graphic>
@@ -141,7 +161,14 @@
                   </ToolBar>
                </children>
             </HBox>
-            <HBox fx:id="colorBox" prefHeight="100.0" prefWidth="427.0" style="-fx-border-color: black; -fx-border-width: 0.5;">
+            <GridPane GridPane.columnIndex="1">
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+              </columnConstraints>
+              <rowConstraints>
+                <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+              </rowConstraints>
                <children>
                   <HBox fx:id="RGBControls" prefHeight="100.0" prefWidth="210.0">
                      <children>
@@ -232,28 +259,35 @@
                         </VBox>
                      </children>
                   </HBox>
-                  <HBox fx:id="colorDisplay" alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="217.0">
+                  <HBox fx:id="colorDisplay" alignment="CENTER_LEFT" prefHeight="100.0" prefWidth="217.0" GridPane.columnIndex="1">
                      <children>
                         <Pane fx:id="colorView" maxHeight="70.0" maxWidth="70.0" prefHeight="70.0" prefWidth="70.0" />
                      </children>
                   </HBox>
                </children>
-            </HBox>
+            </GridPane>
          </children>
-      </HBox>
-      <ScrollPane fx:id="scrollPane" layoutY="130.0" prefHeight="347.0" prefWidth="854.0">
+      </GridPane>
+      <ScrollPane fx:id="scrollPane" layoutY="127.0" prefHeight="347.0" prefWidth="854.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="127.0">
         <content>
-          <AnchorPane fx:id="scrollAnchor" layoutY="130.0" minHeight="0.0" minWidth="0.0" prefHeight="347.0" prefWidth="854.0">
+          <AnchorPane fx:id="scrollAnchor" layoutY="127.0" minHeight="0.0" minWidth="0.0" onMouseEntered="#scrollAnchorMouseEntered" onScroll="#zoomCanvas">
                <children>
-                  <HBox fx:id="canvasBox" alignment="CENTER" prefHeight="347.0" prefWidth="854.0">
+                  <HBox fx:id="canvasBox" alignment="CENTER" prefHeight="347.0" prefWidth="854.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
                      <children>
-                        <Canvas fx:id="canvas" height="300.0" width="600.0" />
+                        <Canvas fx:id="canvas" height="300.0" onMouseDragged="#canvasMouseDragged" onMouseExited="#canvasMouseExited" onMouseMoved="#canvasMouseMoved" onMousePressed="#canvasMousePressed" onMouseReleased="#canvasMouseReleased" width="600.0" />
                      </children>
                   </HBox>
                </children></AnchorPane>
         </content>
       </ScrollPane>
-      <HBox fx:id="bottomBar" layoutY="480.0" prefHeight="15.0" prefWidth="854.0">
+      <GridPane fx:id="bottomBar" prefHeight="15.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+          <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+          <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+        </rowConstraints>
          <children>
             <HBox fx:id="posDisplay" prefHeight="15.0" prefWidth="427.0">
                <children>
@@ -267,7 +301,7 @@
                   </Label>
                </children>
             </HBox>
-            <HBox fx:id="dimDisplay" alignment="TOP_RIGHT" layoutX="427.0" prefHeight="15.0" prefWidth="427.0">
+            <HBox fx:id="dimDisplay" alignment="TOP_RIGHT" prefHeight="15.0" prefWidth="427.0" GridPane.columnIndex="1">
                <children>
                   <Label fx:id="lblDimensions" text="600 x 300px">
                      <font>
@@ -280,6 +314,6 @@
                </children>
             </HBox>
          </children>
-      </HBox>
+      </GridPane>
    </children>
 </AnchorPane>
